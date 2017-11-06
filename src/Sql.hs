@@ -19,7 +19,9 @@ data SqlStatement = Select Expr
 prettyPrint :: SqlStatement -> Text
 prettyPrint (Select (Number n)) = "SELECT " <> pack (show n)
 
-sqlParser :: Text -> Either Text SqlStatement
+type ParserResult a = Either Text  a
+
+sqlParser :: Text -> ParserResult SqlStatement
 sqlParser statement =
  case runParser parser () "<STDIN>" statement of
    Left err     -> Left (pack $ show err)
