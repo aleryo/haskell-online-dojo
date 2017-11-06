@@ -3,30 +3,31 @@ module Interpreter
     ( -- * Top-level CLI
       console
       -- * Interpreter
-    , Command(..), interpret
-    , SqlStatement(..), Expr(..)
+    , Command(..), interpret, isUnknown
+    , module Sql
     )
 where
 
 import           Control.Monad (forever)
 import           Data.Monoid   ((<>))
 import           Data.Text
-
-data Expr = Number Int
-  deriving (Eq, Show, Read)
-
-data SqlStatement = Select Expr
-  deriving (Eq, Show, Read)
+import           Sql
 
 data Command = Exit
              | Sql SqlStatement
              | Unknown Text
   deriving (Eq, Show, Read)
 
+isUnknown :: Command -> Bool
+isUnknown (Unknown _) = True
+isUnknown _           = False
+
 interpret :: Text -> Command
-interpret ".exit"     = Exit
-interpret "SELECT 42" = Sql $ Select (Number 42)
-interpret unknown     = Unknown unknown
+interpret ".exit" = Exit
+interpret input   =
+  case sqlParser input of
+    Right sqlStatement -> Sql sqlStatement
+    Left  err          -> Unknown err
 
 console :: IO ()
 console = do
