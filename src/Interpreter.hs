@@ -4,21 +4,29 @@ module Interpreter
       console
       -- * Interpreter
     , Command(..), interpret
+    , SqlStatement(..), Expr(..)
     )
 where
 
-import Data.Text
-import Control.Monad(forever)
-import Data.Monoid((<>))
+import           Control.Monad (forever)
+import           Data.Monoid   ((<>))
+import           Data.Text
 
+data Expr = Number Int
+  deriving (Eq, Show, Read)
+
+data SqlStatement = Select Expr
+  deriving (Eq, Show, Read)
 
 data Command = Exit
+             | Sql SqlStatement
              | Unknown Text
-  deriving (Eq, Show)
+  deriving (Eq, Show, Read)
 
 interpret :: Text -> Command
-interpret ".exit" = Exit
-interpret unknown = Unknown unknown
+interpret ".exit"     = Exit
+interpret "SELECT 42" = Sql $ Select (Number 42)
+interpret unknown     = Unknown unknown
 
 console :: IO ()
 console = do
