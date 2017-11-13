@@ -3,3 +3,4 @@
 
 ((haskell-mode
   (intero-targets "haskell-sqlite:lib" "haskell-sqlite:exe:haskell-sqlite-exe" "haskell-sqlite:test:haskell-sqlite-test")))
+
