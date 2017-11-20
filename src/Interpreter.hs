@@ -11,13 +11,7 @@ where
 import Data.Text
 import Control.Monad(forever)
 import Data.Monoid((<>))
-import Text.Parsec
-
-data Expr = Number Int
-  deriving (Eq, Show)
-
-data Sql = Select Expr
-  deriving (Eq, Show)
+import Sql
 
 data Command = Exit
              | SqlStatement Sql
@@ -26,7 +20,9 @@ data Command = Exit
 
 interpret :: Text -> Command
 interpret ".exit" = Exit
-interpret s = parseSQL s
+interpret s = case parseSQL s of
+                Left err -> Unknown err
+                Right sql -> SqlStatement sql
 
 console :: IO ()
 console = do
@@ -39,16 +35,3 @@ console = do
       putStrLn ("Unknown command : " <> unpack com)
       console
 
-parseSQL :: Text -> Command
-parseSQL text =
-  case parse monParser "" text
-  of
-    Left error   -> Unknown (pack $ show error)
-    Right result -> SqlStatement result
-  where monParser = do
-          string "SELECT"
-          spaces
-          n <- integer
-          return (Select $ Number n)
-
-        integer = fmap read (many1 digit)
