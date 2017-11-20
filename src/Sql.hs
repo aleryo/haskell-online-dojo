@@ -1,6 +1,6 @@
 module Sql where
 
-import Data.Text
+import Data.Text hiding (foldr)
 import Text.Parsec hiding (label)
 import Data.Maybe
 
@@ -10,9 +10,22 @@ data Expr = Number Int
 
 type TableName = Text
 
+type ColumnName = Text
+
 data Sql = Select [ Expr ] [ TableName ]
   deriving (Eq, Show)
 
+data Relational = Rel TableName
+                | Proj ColumnName Relational
+  deriving (Eq, Show)
+                  
+toRelational :: Sql -> Relational
+toRelational (Select projs [ tableName ]) =
+   foldr proj (Rel tableName) projs
+   where
+     proj (Col t) rel = Proj t rel
+     proj _ rel = rel
+   
 parseSQL :: Text -> Either Text Sql
 parseSQL text =
   case parse sql "" text
