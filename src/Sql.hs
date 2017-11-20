@@ -1,13 +1,16 @@
 module Sql where
 
 import Data.Text
-import Text.Parsec
+import Text.Parsec hiding (label)
+import Data.Maybe
 
 data Expr = Number Int
           | Col Text
   deriving (Eq, Show)
 
-data Sql = Select [ Expr ]
+type TableName = Text
+
+data Sql = Select [ Expr ] [ TableName ]
   deriving (Eq, Show)
 
 parseSQL :: Text -> Either Text Sql
@@ -18,23 +21,34 @@ parseSQL text =
     Right result -> Right result
   where sql = selectClause
 
-        selectClause = do
-          string "SELECT"
-          spaces
-          exprs <- expressionList
+selectClause = do
+  string "SELECT"
+  spaces
+  exprs <- expressionList
+  spaces
+  tables <- optionMaybe fromClause
+  return (Select exprs $ fromMaybe [] tables)
 
-          return (Select exprs)
+fromClause = do
+  string "FROM"
+  spaces
+  tableList
+  
+expressionList = expression `sepBy1` comma
 
-        expressionList = expression `sepBy1` comma
+tableList = tableName `sepBy1` comma
 
-        expression =  (Number <$> integer)
-                  <|> (Col <$> columnName)
-          
-        comma = spaces >> string ","  >> spaces
+expression =  (Number <$> integer)
+          <|> (Col <$> columnName)
+  
+comma = try $ spaces >> string "," >> spaces
 
-        columnName = do
-          l  <- letter
-          ls <- many alphaNum
-          return $ pack $ l:ls
-          
-        integer = fmap read (many1 digit)
+columnName = label
+tableName = label
+
+label = do
+  l  <- letter
+  ls <- many alphaNum
+  return $ pack $ l:ls
+
+integer = fmap read (many1 digit)
