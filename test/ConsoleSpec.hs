@@ -29,7 +29,7 @@ spec = describe "SQL Mini Interpreter" $ do
     it "converts a simple Select statement" $ do
       toRelational (Select [ Col "Foo", Col "Bar"] ["baz"] )
         `shouldBe` Proj "Foo" (Proj "Bar" (Rel "baz"))
-        
-    it "converts a select statement with miultiple from" $ do
+
+    it "converts a select statement with multiple from" $ do
       toRelational (Select [ Col "Foo", Col "Bar"] ["baz", "qix"] )
         `shouldBe` Proj "Foo" (Proj "Bar" (Rel "baz"))
