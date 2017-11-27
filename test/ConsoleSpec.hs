@@ -28,8 +28,15 @@ spec = describe "SQL Mini Interpreter" $ do
   describe "SQL To Relational" $ do
     it "converts a simple Select statement" $ do
       toRelational (Select [ Col "Foo", Col "Bar"] ["baz"] )
-        `shouldBe` Proj "Foo" (Proj "Bar" (Rel "baz"))
+        `shouldBe` Proj  [ "Foo", "Bar"] (Rel "baz")
 
     it "converts a select statement with multiple from" $ do
       toRelational (Select [ Col "Foo", Col "Bar"] ["baz", "qix"] )
-        `shouldBe` Proj "Foo" (Proj "Bar" (Rel "baz"))
+        `shouldBe` Proj [ "Foo", "Bar"] (Prod [ Rel "baz", Rel "qix"])
+
+  describe "Expression evaluation" $ do
+    it "evaluates a relation" $ do
+      let database = Table "Foo" ["a", "b", "c"]
+      evaluate (Rel "Foo") database 
+        `shouldBe` [ "a", "b", "c" ]
+

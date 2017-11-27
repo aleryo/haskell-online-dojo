@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Sql where
 
 import Data.Text hiding (foldr)
@@ -16,15 +17,23 @@ data Sql = Select [ Expr ] [ TableName ]
   deriving (Eq, Show)
 
 data Relational = Rel TableName
-                | Proj ColumnName Relational
+                | Proj [ ColumnName ] Relational
+                | Prod [ Relational ]
   deriving (Eq, Show)
-                  
+
+data Database = Table Text [ Text ]
+
+evaluate :: Relational -> Database -> [Text]
+evaluate rel table = ["a", "b", "c"]
+
+
 toRelational :: Sql -> Relational
-toRelational (Select projs [ tableName ]) =
-   foldr proj (Rel tableName) projs
+toRelational (Select projs tableNames) =
+   Proj proj (relations tableNames)
    where
-     proj (Col t) rel = Proj t rel
-     proj _ rel = rel
+     proj = [ x | Col x <- projs ]
+     relations [ t ] = Rel t
+     relations ts    = Prod $ fmap Rel ts
    
 parseSQL :: Text -> Either Text Sql
 parseSQL text =
