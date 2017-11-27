@@ -16,4 +16,4 @@
 ## Sessions
 
 * [Session 3](https://www.youtube.com/watch?v=EAi--VC_DhY)
-* [Session 4]()
+* [Session 4](https://www.youtube.com/watch?v=tDP_OjiBO_w)
