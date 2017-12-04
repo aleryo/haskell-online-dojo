@@ -72,3 +72,9 @@ spec = describe "SQL Mini Interpreter" $ do
       let db = populate [ ("Foo", Relation [ "col1", "col2", "col3"] [["a"], ["b"], ["c"]]) ]
       evaluate (Prod [ Rel "Foo", Rel "Bar"]) db 
         `shouldBe` Left "no relation with name \"Bar\""
+
+    it "filter columns when evaluating select clause" $ do
+      let  db = populate [ ( "Foo", Relation [ "col1", "col2", "col3"] [["a"], ["b"], ["c"]]) ]
+      evaluate (Proj [ "col1"] (Rel "Foo")) db 
+        `shouldBe` Right (Relation [ "col1" ] [["a"]])
+        

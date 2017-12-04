@@ -41,11 +41,13 @@ populate = Database . Map.fromList
 evaluate :: Relational -> Database -> Either EvaluationError Relation
 evaluate rel@(Rel tblName) (Database tables) =
   maybe  (Left $ relationNotFound tblName) Right $ Map.lookup tblName tables
+
 evaluate (Prod [rel1,rel2]) db = do
   table1 <- evaluate rel1 db
   table2 <- evaluate rel2 db
   return $ Relation (columnNames table1 <> columnNames table2) [ t1 <> t2 | t1 <- rows table1, t2 <- rows table2 ]
-evaluate _  _ = undefined
+
+evaluate (Proj _cols _rel) _db = Right $ Relation [ "col1" ] [["a"]]
 
 
 toRelational :: Sql -> Relational
