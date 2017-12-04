@@ -40,29 +40,34 @@ spec = describe "SQL Mini Interpreter" $ do
     it "evaluates a relation" $ do
       let  db = populate [ ( "Foo", [["a"], ["b"], ["c"]]) ]
       evaluate (Rel "Foo") db 
-        `shouldBe` [["a"], ["b"], ["c"]]
+        `shouldBe` Right [["a"], ["b"], ["c"]]
         
     it "evaluates another relation" $ do
       let db = populate [ ( "Bar",  [["d"], ["e"], ["f"]]) ]
       evaluate (Rel "Bar") db 
-        `shouldBe` [["d"], ["e"], ["f"]]
+        `shouldBe` Right [["d"], ["e"], ["f"]]
 
     it "evaluates a  relation in a database with several tables" $ do
       let db = populate [ ("Foo", [["a"], ["b"], ["c"]])
                         , ( "Bar", [["d"], ["e"], ["f"]])
                         ]
       evaluate (Rel "Bar") db 
-        `shouldBe` [["d"], ["e"], ["f"]]
+        `shouldBe` Right [["d"], ["e"], ["f"]]
 
-    it "returns empty relation when evaluating relation given relation is not in DB" $ do
+    it "returns error when evaluating relation given relation is not in DB" $ do
       let db = populate []
       evaluate (Rel "Bar") db 
-        `shouldBe` []
+        `shouldBe` Left "no relation with name \"Bar\""
 
     it "evaluates cartesian product of 2 relations" $ do
       let db = populate [ ("Foo", [["a"], ["b"], ["c"]])
                         , ( "Bar", [["d"], ["e"], ["f"]])
                         ]
       evaluate (Prod [ Rel "Foo", Rel "Bar"]) db 
-        `shouldBe` [t1 <> t2 | t1 <- [["a"], ["b"], ["c"]]
-                             , t2 <- [["d"], ["e"], ["f"]]] 
+        `shouldBe` Right [t1 <> t2 | t1 <- [["a"], ["b"], ["c"]]
+                                   , t2 <- [["d"], ["e"], ["f"]]] 
+
+    it "returns error when evaluating cartesian product given one relation does not exist" $ do
+      let db = populate [ ("Foo", [["a"], ["b"], ["c"]]) ]
+      evaluate (Prod [ Rel "Foo", Rel "Bar"]) db 
+        `shouldBe` Left "no relation with name \"Bar\""

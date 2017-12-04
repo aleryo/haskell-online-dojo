@@ -25,18 +25,23 @@ data Relational = Rel TableName
 
 type Relation = [[ Text ]]
 
+type EvaluationError = Text
+
+relationNotFound :: TableName -> EvaluationError
+relationNotFound name = "no relation with name " <> (pack $ show name)
+
 newtype Database = Database  { tables :: Map.Map TableName Relation } 
 
 populate :: [ (TableName, Relation) ] -> Database
 populate = Database . Map.fromList
 
-evaluate :: Relational -> Database -> Relation
+evaluate :: Relational -> Database -> Either EvaluationError Relation
 evaluate rel@(Rel tblName) (Database tables) =
-  fromMaybe [] $ Map.lookup tblName tables
-evaluate (Prod [rel1,rel2]) db =
-  let table1 = evaluate rel1 db
-      table2 = evaluate rel2 db
-  in  [ t1 <> t2 | t1 <- table1, t2 <- table2 ]
+  maybe  (Left $ relationNotFound tblName) Right $ Map.lookup tblName tables
+evaluate (Prod [rel1,rel2]) db = do
+  table1 <- evaluate rel1 db
+  table2 <- evaluate rel2 db
+  return  [ t1 <> t2 | t1 <- table1, t2 <- table2 ]
 evaluate _  _ = undefined
 
 
