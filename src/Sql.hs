@@ -4,6 +4,7 @@ module Sql where
 import Data.Text hiding (foldr)
 import Text.Parsec hiding (label)
 import Data.Maybe
+import qualified Data.Map as Map
 
 data Expr = Number Int
           | Col Text
@@ -21,12 +22,14 @@ data Relational = Rel TableName
                 | Prod [ Relational ]
   deriving (Eq, Show)
 
-data Database = Database [ (TableName, [ Text ]) ]
+newtype Database = Database  { tables :: Map.Map TableName [ Text ] } 
+
+populate :: [ (TableName, [ Text ]) ] -> Database
+populate = Database . Map.fromList
 
 evaluate :: Relational -> Database -> [Text]
-evaluate rel@(Rel tblName) (Database ((tblName',datas):tables))
-  | tblName == tblName' = datas
-  | otherwise           = evaluate rel (Database tables) 
+evaluate rel@(Rel tblName) (Database tables) =
+  fromJust $ Map.lookup tblName tables
 evaluate _  _ = undefined
 
 

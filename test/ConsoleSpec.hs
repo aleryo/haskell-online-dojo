@@ -37,19 +37,19 @@ spec = describe "SQL Mini Interpreter" $ do
   describe "Expression evaluation" $ do
     
     it "evaluates a relation" $ do
-      let database = Database [ ( "Foo", ["a", "b", "c"]) ]
-      evaluate (Rel "Foo") database 
+      let  db = populate [ ( "Foo", ["a", "b", "c"]) ]
+      evaluate (Rel "Foo") db 
         `shouldBe` [ "a", "b", "c" ]
         
     it "evaluates another relation" $ do
-      let database = Database [ ( "Bar",  ["d", "e", "f"]) ]
-      evaluate (Rel "Bar") database 
+      let db = populate [ ( "Bar",  ["d", "e", "f"]) ]
+      evaluate (Rel "Bar") db 
         `shouldBe` [ "d", "e", "f" ]
 
     it "evaluates a  relation in a database with several tables" $ do
-      let database = Database [ ("Foo", ["a", "b", "c"])
-                              , ( "Bar", ["d", "e", "f"])
-                              ]
-      evaluate (Rel "Bar") database 
+      let db = populate [ ("Foo", ["a", "b", "c"])
+                        , ( "Bar", ["d", "e", "f"])
+                        ]
+      evaluate (Rel "Bar") db 
         `shouldBe` [ "d", "e", "f" ]
 
