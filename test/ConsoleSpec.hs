@@ -35,8 +35,14 @@ spec = describe "SQL Mini Interpreter" $ do
         `shouldBe` Proj [ "Foo", "Bar"] (Prod [ Rel "baz", Rel "qix"])
 
   describe "Expression evaluation" $ do
+    
     it "evaluates a relation" $ do
       let database = Table "Foo" ["a", "b", "c"]
       evaluate (Rel "Foo") database 
         `shouldBe` [ "a", "b", "c" ]
+        
+    it "evaluates another relation" $ do
+      let database = Table "Bar" ["d", "e", "f"]
+      evaluate (Rel "Bar") database 
+        `shouldBe` [ "d", "e", "f" ]
 

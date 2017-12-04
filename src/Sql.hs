@@ -24,7 +24,9 @@ data Relational = Rel TableName
 data Database = Table Text [ Text ]
 
 evaluate :: Relational -> Database -> [Text]
-evaluate rel table = ["a", "b", "c"]
+evaluate (Rel tblName) (Table tblName' datas)
+  | tblName == tblName' = datas
+evaluate _  _ = undefined
 
 
 toRelational :: Sql -> Relational
