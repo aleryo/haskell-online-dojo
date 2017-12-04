@@ -23,7 +23,10 @@ data Relational = Rel TableName
                 | Prod [ Relational ]
   deriving (Eq, Show)
 
-type Relation = [[ Text ]]
+data Relation = Relation { columnNames :: [ Text ]
+                         , rows       :: [[ Text ]]
+                         }
+                deriving (Eq, Show)
 
 type EvaluationError = Text
 
@@ -41,7 +44,7 @@ evaluate rel@(Rel tblName) (Database tables) =
 evaluate (Prod [rel1,rel2]) db = do
   table1 <- evaluate rel1 db
   table2 <- evaluate rel2 db
-  return  [ t1 <> t2 | t1 <- table1, t2 <- table2 ]
+  return $ Relation (columnNames table1 <> columnNames table2) [ t1 <> t2 | t1 <- rows table1, t2 <- rows table2 ]
 evaluate _  _ = undefined
 
 

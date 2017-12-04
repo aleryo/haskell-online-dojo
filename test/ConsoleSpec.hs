@@ -38,21 +38,21 @@ spec = describe "SQL Mini Interpreter" $ do
   describe "Expression evaluation" $ do
     
     it "evaluates a relation" $ do
-      let  db = populate [ ( "Foo", [["a"], ["b"], ["c"]]) ]
+      let  db = populate [ ( "Foo", Relation [ "col1", "col2", "col3"] [["a"], ["b"], ["c"]]) ]
       evaluate (Rel "Foo") db 
-        `shouldBe` Right [["a"], ["b"], ["c"]]
+        `shouldBe` Right (Relation [ "col1", "col2", "col3"] [["a"], ["b"], ["c"]])
         
     it "evaluates another relation" $ do
-      let db = populate [ ( "Bar",  [["d"], ["e"], ["f"]]) ]
+      let db = populate [ ( "Bar", Relation [ "col4", "col5", "col6"] [["d"], ["e"], ["f"]]) ]
       evaluate (Rel "Bar") db 
-        `shouldBe` Right [["d"], ["e"], ["f"]]
+        `shouldBe` Right (Relation [ "col4", "col5", "col6"][["d"], ["e"], ["f"]])
 
     it "evaluates a  relation in a database with several tables" $ do
-      let db = populate [ ("Foo", [["a"], ["b"], ["c"]])
-                        , ( "Bar", [["d"], ["e"], ["f"]])
+      let db = populate [ ("Foo", Relation [ "col1", "col2", "col3"] [["a"], ["b"], ["c"]])
+                        , ( "Bar", Relation [ "col4", "col5", "col6"] [["d"], ["e"], ["f"]])
                         ]
       evaluate (Rel "Bar") db 
-        `shouldBe` Right [["d"], ["e"], ["f"]]
+        `shouldBe` Right (Relation [ "col4", "col5", "col6"] [["d"], ["e"], ["f"]])
 
     it "returns error when evaluating relation given relation is not in DB" $ do
       let db = populate []
@@ -60,14 +60,15 @@ spec = describe "SQL Mini Interpreter" $ do
         `shouldBe` Left "no relation with name \"Bar\""
 
     it "evaluates cartesian product of 2 relations" $ do
-      let db = populate [ ("Foo", [["a"], ["b"], ["c"]])
-                        , ( "Bar", [["d"], ["e"], ["f"]])
+      let db = populate [ ("Foo", Relation [ "col1", "col2", "col3"] [["a"], ["b"], ["c"]])
+                        , ( "Bar", Relation [ "col4", "col5", "col6"] [["d"], ["e"], ["f"]])
                         ]
       evaluate (Prod [ Rel "Foo", Rel "Bar"]) db 
-        `shouldBe` Right [t1 <> t2 | t1 <- [["a"], ["b"], ["c"]]
-                                   , t2 <- [["d"], ["e"], ["f"]]] 
+        `shouldBe` Right (Relation [ "col1", "col2", "col3", "col4", "col5", "col6"]
+                           [t1 <> t2 | t1 <- [["a"], ["b"], ["c"]]
+                                     , t2 <- [["d"], ["e"], ["f"]]] )
 
     it "returns error when evaluating cartesian product given one relation does not exist" $ do
-      let db = populate [ ("Foo", [["a"], ["b"], ["c"]]) ]
+      let db = populate [ ("Foo", Relation [ "col1", "col2", "col3"] [["a"], ["b"], ["c"]]) ]
       evaluate (Prod [ Rel "Foo", Rel "Bar"]) db 
         `shouldBe` Left "no relation with name \"Bar\""
