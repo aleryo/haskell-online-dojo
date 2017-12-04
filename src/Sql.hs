@@ -21,11 +21,12 @@ data Relational = Rel TableName
                 | Prod [ Relational ]
   deriving (Eq, Show)
 
-data Database = Table Text [ Text ]
+data Database = Database [ (TableName, [ Text ]) ]
 
 evaluate :: Relational -> Database -> [Text]
-evaluate (Rel tblName) (Table tblName' datas)
+evaluate rel@(Rel tblName) (Database ((tblName',datas):tables))
   | tblName == tblName' = datas
+  | otherwise           = evaluate rel (Database tables) 
 evaluate _  _ = undefined
 
 
