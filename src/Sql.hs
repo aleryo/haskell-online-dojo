@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Sql where
 
+import Data.Monoid((<>))
 import Data.Text hiding (foldr)
 import Text.Parsec hiding (label)
 import Data.Maybe
@@ -22,14 +23,20 @@ data Relational = Rel TableName
                 | Prod [ Relational ]
   deriving (Eq, Show)
 
-newtype Database = Database  { tables :: Map.Map TableName [ Text ] } 
+type Relation = [[ Text ]]
 
-populate :: [ (TableName, [ Text ]) ] -> Database
+newtype Database = Database  { tables :: Map.Map TableName Relation } 
+
+populate :: [ (TableName, Relation) ] -> Database
 populate = Database . Map.fromList
 
-evaluate :: Relational -> Database -> [Text]
+evaluate :: Relational -> Database -> Relation
 evaluate rel@(Rel tblName) (Database tables) =
-  fromJust $ Map.lookup tblName tables
+  fromMaybe [] $ Map.lookup tblName tables
+evaluate (Prod [rel1,rel2]) db =
+  let table1 = evaluate rel1 db
+      table2 = evaluate rel2 db
+  in  [ t1 <> t2 | t1 <- table1, t2 <- table2 ]
 evaluate _  _ = undefined
 
 

@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module ConsoleSpec where
 
+import Data.Monoid((<>))
 import Interpreter
 import Sql
 import Test.Hspec
@@ -37,19 +38,31 @@ spec = describe "SQL Mini Interpreter" $ do
   describe "Expression evaluation" $ do
     
     it "evaluates a relation" $ do
-      let  db = populate [ ( "Foo", ["a", "b", "c"]) ]
+      let  db = populate [ ( "Foo", [["a"], ["b"], ["c"]]) ]
       evaluate (Rel "Foo") db 
-        `shouldBe` [ "a", "b", "c" ]
+        `shouldBe` [["a"], ["b"], ["c"]]
         
     it "evaluates another relation" $ do
-      let db = populate [ ( "Bar",  ["d", "e", "f"]) ]
+      let db = populate [ ( "Bar",  [["d"], ["e"], ["f"]]) ]
       evaluate (Rel "Bar") db 
-        `shouldBe` [ "d", "e", "f" ]
+        `shouldBe` [["d"], ["e"], ["f"]]
 
     it "evaluates a  relation in a database with several tables" $ do
-      let db = populate [ ("Foo", ["a", "b", "c"])
-                        , ( "Bar", ["d", "e", "f"])
+      let db = populate [ ("Foo", [["a"], ["b"], ["c"]])
+                        , ( "Bar", [["d"], ["e"], ["f"]])
                         ]
       evaluate (Rel "Bar") db 
-        `shouldBe` [ "d", "e", "f" ]
+        `shouldBe` [["d"], ["e"], ["f"]]
 
+    it "returns empty relation when evaluating relation given relation is not in DB" $ do
+      let db = populate []
+      evaluate (Rel "Bar") db 
+        `shouldBe` []
+
+    it "evaluates cartesian product of 2 relations" $ do
+      let db = populate [ ("Foo", [["a"], ["b"], ["c"]])
+                        , ( "Bar", [["d"], ["e"], ["f"]])
+                        ]
+      evaluate (Prod [ Rel "Foo", Rel "Bar"]) db 
+        `shouldBe` [t1 <> t2 | t1 <- [["a"], ["b"], ["c"]]
+                             , t2 <- [["d"], ["e"], ["f"]]] 
