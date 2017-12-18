@@ -53,7 +53,10 @@ populate :: [ (TableName, Relation) ] -> DB
 populate = Map.fromList
 
 evaluate :: Relational -> DB -> Either EvaluationError Relation
-evaluate rel db = flip evalState db $ runExceptT $ tables $ evaluateDB rel
+evaluate rel db = runDatabase db $ evaluateDB rel
+
+runDatabase :: DB -> Database a -> Either EvaluationError a
+runDatabase db = flip evalState db . runExceptT . tables
 
 evaluateDB :: Relational -> Database Relation
 evaluateDB rel@(Rel tblName) = do

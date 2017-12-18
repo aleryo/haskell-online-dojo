@@ -91,8 +91,18 @@ spec = describe "SQL Mini Interpreter" $ do
       evaluate (Proj [ "col1"] (Rel "Foo")) db
         `shouldBe` Right (Relation [ "col1" ] [["a"]])
 
-    -- it "creates a table with input data" $ do
-    --   let db = populate []
-    --       db' = populate [ ( "Foo", Relation [ "Col1"] [ [ "hello"] ] )]
-    --   evaluate (Create "Foo" [ "Col1" ] [ [ "hello" ]])
-    --     `shouldBe` Right (db', Relation [ "Col1"] [ [ "hello"] ])
+    it "creates a table with input data" $ do
+      let db = populate []
+          db' = populate [ ( "Foo", Relation [ "Col1"] [ [ "hello"] ] )]
+      evaluate (Create "Foo" (Relation [ "Col1" ] [ [ "hello" ]])) db
+        `shouldBe` Right (Relation [ "Col1"] [ [ "hello"] ])
+
+    it "evaluates a select over a create" $ do
+      let db = populate []
+          sql = do
+            _ <- evaluateDB (Create "Foo" (Relation [ "Col1" ] [ [ "hello" ]]))
+            _ <- evaluateDB (Create "Bar" (Relation [ "Col2" ] [ [ "helli" ]]))
+            evaluateDB (Prod [ Rel "Foo", Rel "Bar"])
+
+      runDatabase db sql
+        `shouldBe` Right (Relation [ "Col1" ,"Col2"] [ [ "hello", "helli"] ])
