@@ -47,7 +47,12 @@ relationNotFound name = "no relation with name " <> (pack $ show name)
 type DB = Map.Map TableName Relation
 
 newtype Database a = Database { tables :: ExceptT EvaluationError (State DB) a }
-  deriving (Functor, Applicative, Monad, MonadState DB, MonadError EvaluationError)
+  deriving ( Functor
+           , Applicative
+           , Monad
+           , MonadState DB
+           , MonadError EvaluationError
+           )
 
 populate :: [ (TableName, Relation) ] -> DB
 populate = Map.fromList
@@ -59,9 +64,8 @@ runDatabase :: DB -> Database a -> Either EvaluationError a
 runDatabase db = flip evalState db . runExceptT . tables
 
 evaluateDB :: Relational -> Database Relation
-evaluateDB rel@(Rel tblName) = do
-  tables <- get
-  maybe  (throwError $ relationNotFound tblName) pure $ Map.lookup tblName tables
+evaluateDB rel@(Rel tblName) =
+  get >>= maybe  (throwError $ relationNotFound tblName) pure . Map.lookup tblName
 
 evaluateDB (Prod [rel1,rel2]) = do
   table1 <- evaluateDB rel1
