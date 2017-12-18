@@ -17,6 +17,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Interpreter, Sql
   build-depends:       base
+                     , mtl
                      , text
                      , parsec
                      , containers

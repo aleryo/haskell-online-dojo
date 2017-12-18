@@ -1,10 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TupleSections #-}
 module Sql where
 
+import Control.Monad.State
+import Control.Monad.Except
 import Data.Monoid((<>))
 import Data.Text hiding (foldr)
-import Text.Parsec hiding (label)
+import Text.Parsec hiding (label, State)
 import Data.Maybe
 import Data.String
 import qualified Data.Map as Map
@@ -22,7 +25,7 @@ type TableName = Text
 type ColumnName = Text
 
 data Sql = Select [ Expr ] [ TableName ]
-  | Insert TableName [ ColumnName ] [ [ Expr ] ] 
+  | Insert TableName [ ColumnName ] [ [ Expr ] ]
   deriving (Eq, Show)
 
 data Relational = Rel TableName
@@ -41,26 +44,31 @@ type EvaluationError = Text
 relationNotFound :: TableName -> EvaluationError
 relationNotFound name = "no relation with name " <> (pack $ show name)
 
-newtype Database = Database  { tables :: Map.Map TableName Relation } 
-  deriving (Eq,Show)
+type DB = Map.Map TableName Relation
 
-populate :: [ (TableName, Relation) ] -> Database
-populate = Database . Map.fromList
+newtype Database a = Database { tables :: ExceptT EvaluationError (State DB) a }
+  deriving (Functor, Applicative, Monad, MonadState DB, MonadError EvaluationError)
 
-evaluate :: Relational -> Database -> Either EvaluationError (Database, Relation)
-evaluate rel@(Rel tblName) db@(Database tables) =
-  maybe  (Left $ relationNotFound tblName) (Right . (db,)) $ Map.lookup tblName tables
+populate :: [ (TableName, Relation) ] -> DB
+populate = Map.fromList
 
-evaluate (Prod [rel1,rel2]) db = do
-  (_,table1) <- evaluate rel1 db
-  (_,table2) <- evaluate rel2 db
-  return $ (db, Relation (columnNames table1 <> columnNames table2) [ t1 <> t2 | t1 <- rows table1, t2 <- rows table2 ])
+evaluate :: Relational -> DB -> Either EvaluationError Relation
+evaluate rel db = flip evalState db $ runExceptT $ tables $ evaluateDB rel
 
-evaluate (Proj _cols _rel) db = Right (db, Relation [ "col1" ] [["a"]])
-evaluate (Create tbl rel) (Database db)  = Right (Database db', rel)
-  where
-    db'= Map.insert tbl rel db
+evaluateDB :: Relational -> Database Relation
+evaluateDB rel@(Rel tblName) = do
+  tables <- get
+  maybe  (throwError $ relationNotFound tblName) pure $ Map.lookup tblName tables
 
+evaluateDB (Prod [rel1,rel2]) = do
+  table1 <- evaluateDB rel1
+  table2 <- evaluateDB rel2
+  return $ Relation (columnNames table1 <> columnNames table2) [ t1 <> t2 | t1 <- rows table1, t2 <- rows table2 ]
+
+evaluateDB (Proj _cols _rel) = pure $ Relation [ "col1" ] [["a"]]
+evaluateDB (Create tbl rel)  = do
+  modify $ Map.insert tbl rel
+  return rel
 
 toRelational :: Sql -> Relational
 toRelational (Select projs tableNames) =
@@ -94,7 +102,7 @@ selectClause = do
 insertClause = do
   string "INSERT" >> spaces >> string "INTO"
   spaces
-  table <- tableName 
+  table <- tableName
   spaces
   string "("
   spaces
@@ -110,14 +118,14 @@ insertClause = do
   spaces
   string ")"
   return (Insert table columns [values])
-  
+
 columnList = columnName `sepBy1` comma
 
 fromClause = do
   string "FROM"
   spaces
   tableList
-  
+
 expressionList = expression `sepBy1` comma
 
 tableList = tableName `sepBy1` comma
@@ -131,7 +139,7 @@ stringLiteral = do
   str <- label
   char '\''
   return str
-  
+
 comma = try $ spaces >> string "," >> spaces
 
 columnName = label

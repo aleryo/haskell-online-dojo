@@ -53,19 +53,19 @@ spec = describe "SQL Mini Interpreter" $ do
     it "evaluates a relation" $ do
       let  db = populate [ ( "Foo", relationabc) ]
       evaluate (Rel "Foo") db
-        `shouldBe` Right (db,  relationabc)
+        `shouldBe` Right relationabc
 
     it "evaluates another relation" $ do
       let db = populate [ ( "Bar", relationdef) ]
       evaluate (Rel "Bar") db
-        `shouldBe` Right (db,  relationdef)
+        `shouldBe` Right relationdef
 
     it "evaluates a  relation in a database with several tables" $ do
       let db = populate [ ( "Foo", relationabc)
                         , ( "Bar", relationdef)
                         ]
       evaluate (Rel "Bar") db
-        `shouldBe` Right (db,  (relationdef))
+        `shouldBe` Right relationdef
 
     it "returns error when evaluating relation given relation is not in DB" $ do
       let db = populate []
@@ -77,9 +77,9 @@ spec = describe "SQL Mini Interpreter" $ do
                         , ( "Bar", relationdef)
                         ]
       evaluate (Prod [ Rel "Foo", Rel "Bar"]) db
-        `shouldBe` Right (db,  (Relation [ "col1", "col2", "col3", "col4", "col5", "col6"]
+        `shouldBe` Right (Relation [ "col1", "col2", "col3", "col4", "col5", "col6"]
                            [t1 <> t2 | t1 <- [["a"], ["b"], ["c"]]
-                                     , t2 <- [["d"], ["e"], ["f"]]] ))
+                                     , t2 <- [["d"], ["e"], ["f"]]] )
 
     it "returns error when evaluating cartesian product given one relation does not exist" $ do
       let db = populate [ ("Foo", relationabc) ]
@@ -89,7 +89,7 @@ spec = describe "SQL Mini Interpreter" $ do
     it "filter columns when evaluating select clause" $ do
       let  db = populate [ ( "Foo", relationabc) ]
       evaluate (Proj [ "col1"] (Rel "Foo")) db
-        `shouldBe` Right (db,  (Relation [ "col1" ] [["a"]]))
+        `shouldBe` Right (Relation [ "col1" ] [["a"]])
 
     -- it "creates a table with input data" $ do
     --   let db = populate []
