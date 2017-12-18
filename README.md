@@ -20,3 +20,4 @@
 * [Session 5](https://www.youtube.com/watch?v=eNYeYcgUvAo)
 * [Session 6](https://www.youtube.com/watch?v=u-UdEeig-0U)
 * [Session 7](https://youtu.be/C3owSoky7M0)
+* [Session 8](https://youtu.be/eGZB0VltlKY)
