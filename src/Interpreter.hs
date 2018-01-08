@@ -9,7 +9,6 @@ module Interpreter
 where
 
 import Data.Text
-import Control.Monad(forever)
 import Data.Monoid((<>))
 import Sql
 
@@ -34,4 +33,4 @@ console = do
     Unknown com -> do
       putStrLn ("Unknown command : " <> unpack com)
       console
-
+    e -> error $ "don't know how to handle " <> show e

@@ -16,6 +16,8 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Interpreter, Sql
+  ghc-options: -Wall -Werror
+  other-modules:  Sql.Parser, Sql.Evaluator
   build-depends:       base
                      , mtl
                      , text
