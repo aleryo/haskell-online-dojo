@@ -8,8 +8,12 @@ import Test.Hspec
 
 spec :: Spec
 spec = describe "SQL Mini Interpreter" $ do
+
   it "interprets '.exit' as Exit command" $ do
     interpret ".exit" `shouldBe` Exit
+
+  it "interprets SQL commands" $
+    pending
 
   describe "SQL Parser"$ do
 

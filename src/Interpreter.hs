@@ -28,9 +28,12 @@ console = do
   putStr "> "
   line <- getLine
   let output = interpret $ pack line
+      db = populate []
   case output of
-    Exit        -> putStrLn "bye !"
+    Exit             -> putStrLn "bye !"
+    SqlStatement sql -> do
+      print $ runDatabase db (evaluateDB $ toRelational sql)
+      console
     Unknown com -> do
       putStrLn ("Unknown command : " <> unpack com)
       console
-    e -> error $ "don't know how to handle " <> show e
