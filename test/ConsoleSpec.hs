@@ -12,8 +12,13 @@ spec = describe "SQL Mini Interpreter" $ do
   it "interprets '.exit' as Exit command" $ do
     interpret ".exit" `shouldBe` Exit
 
-  it "interprets SQL commands" $
-    pending
+  it "interprets SQL commands" $ do
+    let output = runCommand [ "INSERT INTO Foo (Col1) VALUES ('hello')"
+                            , "INSERT INTO Foo (Col1) VALUES ('helli')"
+                            , "SELECT Col1 FROM Foo"
+                            ]
+
+    output `shouldBe`  [ "", "", "hello", "helli" ]
 
   describe "SQL Parser"$ do
 

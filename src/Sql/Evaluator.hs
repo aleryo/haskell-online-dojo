@@ -2,8 +2,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TupleSections #-}
 module Sql.Evaluator
-  ( evaluate, populate, evaluateDB, runDatabase, toRelational
-  , Relational(..), Relation(..)
+  ( evaluate, populate, evaluateDB, execDatabase, runDatabase, toRelational
+  , Relational(..), Relation(..), DB
   ) where
 
 import Sql.Parser(Sql(..), Expr(..))
@@ -50,6 +50,9 @@ populate = Map.fromList
 
 evaluate :: Relational -> DB -> Either EvaluationError Relation
 evaluate rel db = runDatabase db $ evaluateDB rel
+
+execDatabase :: DB -> Database a -> (Either EvaluationError a, DB)
+execDatabase db = flip runState db . runExceptT . tables
 
 runDatabase :: DB -> Database a -> Either EvaluationError a
 runDatabase db = flip evalState db . runExceptT . tables

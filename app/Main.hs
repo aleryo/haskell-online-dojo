@@ -9,6 +9,6 @@ import Interpreter
 -- unknown command: toto
 -- > .exit
 -- bye!
--- 
+--
 main :: IO ()
 main = console
