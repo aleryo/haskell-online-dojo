@@ -8,6 +8,7 @@ module Interpreter
     )
 where
 
+import Control.Monad.State
 import Data.Text
 import qualified Data.Text.IO as IO
 import Data.Monoid((<>))
@@ -24,15 +25,16 @@ interpret s = case parseSQL s of
                 Left err  -> Unknown err
                 Right sql -> SqlStatement sql
 
-runCommand :: Text -> DB -> Maybe (Text, DB)
-runCommand line db =
+runCommand :: Text -> State DB (Maybe Text)
+runCommand line = do
+  db <- get
   let output = interpret line
-  in case output of
+  case output of
        SqlStatement sql ->
          let (result, db') = execDatabase db (evaluateDB $ toRelational sql)
-         in Just (pack $ show result, db')
-       Unknown err     -> Just ("unknown command:" <> err, db)
-       Exit           -> Nothing
+         in put db' >> return (Just $pack $ show result)
+       Unknown err     -> return $ Just $ "unknown command:" <> err
+       Exit            -> return $ Nothing
 
 
 console :: IO ()
@@ -41,7 +43,7 @@ console = console' (populate [])
     console' db = do
       putStr "> "
       line <- pack <$> getLine
-      let output = runCommand line db
+      let (output,db')  = runState (runCommand line) db
       case output of
-        Nothing         -> IO.putStrLn "bye!"
-        Just (msg, db') -> IO.putStrLn msg >> console' db'
+        Nothing  -> IO.putStrLn "bye!"
+        Just msg -> IO.putStrLn msg >> console' db'

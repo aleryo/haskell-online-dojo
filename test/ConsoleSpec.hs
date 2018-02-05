@@ -5,12 +5,21 @@ import Data.Monoid((<>))
 import Interpreter
 import Sql
 import Test.Hspec
+import Control.Monad.State
+import Data.Text
 
 spec :: Spec
 spec = describe "SQL Mini Interpreter" $ do
 
   it "interprets '.exit' as Exit command" $ do
     interpret ".exit" `shouldBe` Exit
+
+  it "interprets SQL commands" $ do
+    let output = do
+          runCommand "INSERT INTO Foo (Col1) VALUES ('helli')"
+          runCommand "SELECT Col1 FROM Foo"
+
+    evalState output (populate []) `shouldBe` Just (pack $ show $ (Right (Relation ["Col1"] [["helli"]]) :: Either Text Relation))
 
   describe "SQL Parser"$ do
 

@@ -1,6 +1,7 @@
 module Main where
 
 import Interpreter
+import System.IO
 
 -- Sample session
 -- haskell-sqlite v0.1
@@ -11,4 +12,4 @@ import Interpreter
 -- bye!
 --
 main :: IO ()
-main = console
+main = hSetBuffering stdout NoBuffering >> hSetBuffering stderr NoBuffering >> console
