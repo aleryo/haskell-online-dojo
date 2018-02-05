@@ -6,11 +6,13 @@ module Sql.Evaluator
   , Relational(..), Relation(..), DB
   ) where
 
+import Data.Maybe
 import Sql.Parser(Sql(..), Expr(..))
 import Control.Monad.State
 import Control.Monad.Except
 import Data.Monoid((<>))
 import Data.Text
+import Data.List(elemIndex)
 import qualified Data.Map as Map
 
 
@@ -66,7 +68,13 @@ evaluateDB (Prod [rel1,rel2]) = do
   table2 <- evaluateDB rel2
   return $ Relation (columnNames table1 <> columnNames table2) [ t1 <> t2 | t1 <- rows table1, t2 <- rows table2 ]
 
-evaluateDB (Proj _cols _rel) = pure $ Relation [ "col1" ] [["a"]]
+evaluateDB (Proj [col] rel) = do
+  Relation cols rws <- evaluateDB rel
+  let
+    projectCols row = [ row !! colNum ]
+    colNum = fromJust $ elemIndex col cols
+  pure $ Relation [ col ] (fmap projectCols rws)
+
 evaluateDB (Create tbl rel)  = do
   modify $ Map.insert tbl rel
   return rel

@@ -12,14 +12,6 @@ spec = describe "SQL Mini Interpreter" $ do
   it "interprets '.exit' as Exit command" $ do
     interpret ".exit" `shouldBe` Exit
 
-  it "interprets SQL commands" $ do
-    let output = runCommand [ "INSERT INTO Foo (Col1) VALUES ('hello')"
-                            , "INSERT INTO Foo (Col1) VALUES ('helli')"
-                            , "SELECT Col1 FROM Foo"
-                            ]
-
-    output `shouldBe`  [ "", "", "hello", "helli" ]
-
   describe "SQL Parser"$ do
 
     it "interprets 'SELECT 42' as an SqlStatement" $ do
@@ -27,7 +19,6 @@ spec = describe "SQL Mini Interpreter" $ do
 
     it "interprets 'SELECT 1' as an SqlStatement" $ do
       interpret "SELECT 1" `shouldBe` SqlStatement (Select [ Number 1 ] [])
-
     it "interprets 'SELECT Foo, Bar' as a SqlStatement" $ do
       interpret "SELECT Foo,Bar" `shouldBe` SqlStatement (Select [ Col "Foo", Col "Bar"] [])
 
@@ -56,8 +47,8 @@ spec = describe "SQL Mini Interpreter" $ do
 
   describe "Expression evaluation" $ do
 
-    let relationabc = Relation [ "col1", "col2", "col3"] [["a"], ["b"], ["c"]]
-        relationdef = Relation [ "col4", "col5", "col6"] [["d"], ["e"], ["f"]]
+    let relationabc = Relation [ "col1", "col2", "col3"] [["a", "b", "c"]]
+        relationdef = Relation [ "col4"] [["d"], ["e"], ["f"]]
 
     it "evaluates a relation" $ do
       let  db = populate [ ( "Foo", relationabc) ]
@@ -86,8 +77,8 @@ spec = describe "SQL Mini Interpreter" $ do
                         , ( "Bar", relationdef)
                         ]
       evaluate (Prod [ Rel "Foo", Rel "Bar"]) db
-        `shouldBe` Right (Relation [ "col1", "col2", "col3", "col4", "col5", "col6"]
-                           [t1 <> t2 | t1 <- [["a"], ["b"], ["c"]]
+        `shouldBe` Right (Relation [ "col1", "col2", "col3", "col4" ]
+                           [t1 <> t2 | t1 <- [["a", "b", "c"]]
                                      , t2 <- [["d"], ["e"], ["f"]]] )
 
     it "returns error when evaluating cartesian product given one relation does not exist" $ do
@@ -100,9 +91,14 @@ spec = describe "SQL Mini Interpreter" $ do
       evaluate (Proj [ "col1"] (Rel "Foo")) db
         `shouldBe` Right (Relation [ "col1" ] [["a"]])
 
+    it "filter columns when evaluating select clause" $ do
+      let  db = populate [ ( "Foo", relationabc) ]
+      evaluate (Proj [ "col2"] (Rel "Foo")) db
+        `shouldBe` Right (Relation [ "col2" ] [["b"]])
+
     it "creates a table with input data" $ do
       let db = populate []
-          db' = populate [ ( "Foo", Relation [ "Col1"] [ [ "hello"] ] )]
+
       evaluate (Create "Foo" (Relation [ "Col1" ] [ [ "hello" ]])) db
         `shouldBe` Right (Relation [ "Col1"] [ [ "hello"] ])
 
