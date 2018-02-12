@@ -35,11 +35,6 @@ data Relation = Relation { columnNames :: [ Text ]
                          }
                 deriving (Eq, Show)
 
-instance Monoid Relation where
-  Relation cols rs `mappend` Relation _cols' rs'
-    = Relation cols (rs <> rs')
-  mempty = Relation [] []
-
 type EvaluationError = Text
 
 relationNotFound :: TableName -> EvaluationError
@@ -93,7 +88,13 @@ evaluateDB (Create' tbl cols)  = do
   return rel
 
 evaluateDB (Add tbl rel)  = do
-  modify $ Map.update (\ rel' -> Just $ rel' <> rel) tbl
+  db <- get
+  case Map.lookup tbl db of
+    Nothing -> throwError $ relationNotFound tbl
+    Just rel' ->
+      if columnNames rel' == columnNames rel
+      then put (Map.insert tbl (Relation (columnNames rel) (rows rel' <> rows rel)) db)
+      else throwError "Incompatible relation schemas"
   return rel
 
 evaluateDB expr  = throwError $ "Don't know how to evaluate " <> pack (show expr)

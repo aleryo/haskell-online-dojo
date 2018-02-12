@@ -144,6 +144,17 @@ spec = describe "SQL Mini Interpreter" $ do
       runDatabase db sql
         `shouldBe` Right (Relation [ "Col1"] [ [ "helli"] , ["hello"] ])
 
+    it "fails to insert data when columns don't match" $ do
+      let db = populate []
+          sql = do
+            _ <- evaluateDB (Create' "Foo" [ "Col1" ])
+            _ <- evaluateDB (Add "Foo" (Relation [ "Col1" ] [ [ "helli" ]]))
+            _ <- evaluateDB (Add "Foo" (Relation [ "Col2" ] [ [ "hello" ]]))
+            evaluateDB (Rel "Foo")
+
+      runDatabase db sql
+        `shouldBe` Left "Incompatible relation schemas"
+
     it "evaluates a select over a create" $ do
       let db = populate []
           sql = do
