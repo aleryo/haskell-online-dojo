@@ -10,7 +10,7 @@ import Data.Maybe
 import Sql.Parser(Sql(..), Expr(..))
 import Control.Monad.State
 import Control.Monad.Except
-import Data.Monoid((<>))
+import Data.Monoid
 import Data.Text
 import Data.List(elemIndex)
 import qualified Data.Map as Map
@@ -24,6 +24,9 @@ data Relational = Rel TableName
                 | Proj [ ColumnName ] Relational
                 | Prod [ Relational ]
                 | Create TableName Relation
+                | Create' TableName [ ColumnName ]
+                -- ^TODO: refactor, added to not break too many existing tests
+                | Add TableName Relation
   deriving (Eq, Show)
 
 
@@ -31,6 +34,11 @@ data Relation = Relation { columnNames :: [ Text ]
                          , rows       :: [[ Text ]]
                          }
                 deriving (Eq, Show)
+
+instance Monoid Relation where
+  Relation cols rs `mappend` Relation _cols' rs'
+    = Relation cols (rs <> rs')
+  mempty = Relation [] []
 
 type EvaluationError = Text
 
@@ -77,6 +85,15 @@ evaluateDB (Proj [col] rel) = do
 
 evaluateDB (Create tbl rel)  = do
   modify $ Map.insert tbl rel
+  return rel
+
+evaluateDB (Create' tbl cols)  = do
+  let rel = Relation cols []
+  modify $ Map.insert tbl rel
+  return rel
+
+evaluateDB (Add tbl rel)  = do
+  modify $ Map.update (\ rel' -> Just $ rel' <> rel) tbl
   return rel
 
 evaluateDB expr  = throwError $ "Don't know how to evaluate " <> pack (show expr)

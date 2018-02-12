@@ -8,15 +8,37 @@ import Test.Hspec
 import Control.Monad.State
 import Data.Text
 
+
+-- TODO
+-- * durability of DB:
+--   * serialize to/from binary: relatively simple, define a binary form then RW
+--       -> (2.5) serialize/deserialize binary to file
+--       -> (3.5) map binary DB to file (e.g. mmap)
+--   * store modification journal
+--       -> expose modification operations as independent "DSL"
+--       -> (5) keep db log/ reload from log (event store) -> transaction
+--   * operate DB ops on a "more efficient" representation (e.g. BTree)
+--       -> (2) naive way: an array of records
+--       -> (3) efficient way : Btree structure
+-- * Bugs:
+--   * Insert overwrites previous values
+--       -> separate create from insert (new command)
+--       -> (1) improve insert to lookup existing table
+--   * fromJust when projecting -> unknown column name?
+--       -> error handling
+
 spec :: Spec
 spec = describe "SQL Mini Interpreter" $ do
 
   it "interprets '.exit' as Exit command" $ do
     interpret ".exit" `shouldBe` Exit
 
+  it "interprets '.load file.db' as Database load command" $ do
+    pending
+
   it "interprets SQL commands" $ do
     let output = do
-          runCommand "INSERT INTO Foo (Col1) VALUES ('helli')"
+          _ <- runCommand "INSERT INTO Foo (Col1) VALUES ('helli')"
           runCommand "SELECT Col1 FROM Foo"
 
     evalState output (populate []) `shouldBe` Just (pack $ show $ (Right (Relation ["Col1"] [["helli"]]) :: Either Text Relation))
@@ -110,6 +132,17 @@ spec = describe "SQL Mini Interpreter" $ do
 
       evaluate (Create "Foo" (Relation [ "Col1" ] [ [ "hello" ]])) db
         `shouldBe` Right (Relation [ "Col1"] [ [ "hello"] ])
+
+    it "insert data into an existing table" $ do
+      let db = populate []
+          sql = do
+            _ <- evaluateDB (Create' "Foo" [ "Col1" ])
+            _ <- evaluateDB (Add "Foo" (Relation [ "Col1" ] [ [ "helli" ]]))
+            _ <- evaluateDB (Add "Foo" (Relation [ "Col1" ] [ [ "hello" ]]))
+            evaluateDB (Rel "Foo")
+
+      runDatabase db sql
+        `shouldBe` Right (Relation [ "Col1"] [ [ "helli"] , ["hello"] ])
 
     it "evaluates a select over a create" $ do
       let db = populate []
