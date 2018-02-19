@@ -1,9 +1,11 @@
- {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TupleSections #-}
 module Sql.Evaluator
-  ( evaluate, populate, evaluateDB, execDatabase, runDatabase, toRelational
-  , Relational(..), Relation(..), DB
+  ( evaluate, DB(..), MapDB, populate, evaluateDB, execDatabase, runDatabase, toRelational
+  , Relational(..), Relation(..)
   ) where
 
 import Data.Maybe
@@ -11,14 +13,11 @@ import Sql.Parser(Sql(..), Expr(..))
 import Control.Monad.State
 import Control.Monad.Except
 import Data.Monoid
-import Data.Text
+import Data.Text hiding (foldr)
 import Data.List(elemIndex)
 import qualified Data.Map as Map
-
-
-type TableName = Text
-
-type ColumnName = Text
+import Prelude hiding (lookup)
+import Sql.DB
 
 data Relational = Rel TableName
                 | Proj [ ColumnName ] Relational
@@ -30,41 +29,31 @@ data Relational = Rel TableName
   deriving (Eq, Show)
 
 
-data Relation = Relation { columnNames :: [ Text ]
-                         , rows       :: [[ Text ]]
-                         }
-                deriving (Eq, Show)
-
 type EvaluationError = Text
 
 relationNotFound :: TableName -> EvaluationError
 relationNotFound name = "no relation with name " <> (pack $ show name)
 
-type DB = Map.Map TableName Relation
-
-newtype Database a = Database { tables :: ExceptT EvaluationError (State DB) a }
+newtype Database db a = Database { tables :: ExceptT EvaluationError (State db) a }
   deriving ( Functor
            , Applicative
            , Monad
-           , MonadState DB
+           , MonadState db
            , MonadError EvaluationError
            )
 
-populate :: [ (TableName, Relation) ] -> DB
-populate = Map.fromList
-
-evaluate :: Relational -> DB -> Either EvaluationError Relation
+evaluate :: (DB db) => Relational -> db -> Either EvaluationError Relation
 evaluate rel db = runDatabase db $ evaluateDB rel
 
-execDatabase :: DB -> Database a -> (Either EvaluationError a, DB)
+execDatabase :: (DB db) => db -> Database db a -> (Either EvaluationError a, db)
 execDatabase db = flip runState db . runExceptT . tables
 
-runDatabase :: DB -> Database a -> Either EvaluationError a
+runDatabase :: (DB db) => db -> Database db a -> Either EvaluationError a
 runDatabase db = flip evalState db . runExceptT . tables
 
-evaluateDB :: Relational -> Database Relation
+evaluateDB :: (DB db) => Relational -> Database db Relation
 evaluateDB (Rel tblName) =
-  get >>= maybe  (throwError $ relationNotFound tblName) pure . Map.lookup tblName
+  get >>= maybe  (throwError $ relationNotFound tblName) pure . lookup tblName
 
 evaluateDB (Prod [rel1,rel2]) = do
   table1 <- evaluateDB rel1
@@ -79,21 +68,21 @@ evaluateDB (Proj [col] rel) = do
   pure $ Relation [ col ] (fmap projectCols rws)
 
 evaluateDB (Create tbl rel)  = do
-  modify $ Map.insert tbl rel
+  modify $ insert tbl rel
   return rel
 
 evaluateDB (Create' tbl cols)  = do
   let rel = Relation cols []
-  modify $ Map.insert tbl rel
+  modify $ insert tbl rel
   return rel
 
 evaluateDB (Add tbl rel)  = do
   db <- get
-  case Map.lookup tbl db of
+  case lookup tbl db of
     Nothing -> throwError $ relationNotFound tbl
     Just rel' ->
       if columnNames rel' == columnNames rel
-      then put (Map.insert tbl (Relation (columnNames rel) (rows rel' <> rows rel)) db)
+      then put (insert tbl (Relation (columnNames rel) (rows rel' <> rows rel)) db)
       else throwError "Incompatible relation schemas"
   return rel
 
@@ -112,3 +101,12 @@ toRelational (Insert tableName cols values) =
 eval :: Expr -> Text
 eval (Str s) = s
 eval expr    = error $ "cannot eval " <> show expr
+
+
+-- ** Naive Implementation as Map
+type MapDB = Map.Map TableName Relation
+
+instance DB MapDB where
+  lookup = Map.lookup
+  insert = Map.insert
+  initDB = Map.empty

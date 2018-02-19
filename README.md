@@ -13,6 +13,33 @@
 9. Optimisation du plan de requête
 10. Serveur REST
 
+### Pipeline
+
+```
+parseSQL :: Text -> SQL
+```
+
+Analyse syntaxique d'un texte pour produire une expression SQL
+
+```
+ toRelational :: SQL -> Relational
+```
+
+Transforme une SQL expression vers algèbre relationnelle
+
+```
+evaluateDB :: Relational -> DB -> Either Error (Relation, DB)
+```
+
+Interprète une expression relationnelle dans le contexte d'une BDD (caché derrière `Database` qui est une monade)
+
+### Logs
+
+```
+stream :: Relational -> DB -> [ DBOps ]
+```
+
+
 ## Sessions
 
 * [Session 3](https://www.youtube.com/watch?v=EAi--VC_DhY)

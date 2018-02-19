@@ -16,19 +16,22 @@ import Data.Text
 --       -> (3.5) map binary DB to file (e.g. mmap)
 --   * store modification journal
 --       -> expose modification operations as independent "DSL"
---       -> (5) keep db log/ reload from log (event store) -> transaction
+--       -> (2.2) keep db log/ reload from log (event store) -> transaction
 --   * operate DB ops on a "more efficient" representation (e.g. BTree)
---       -> (2) naive way: an array of records
+--       -> (2) naive way: an array of binary data
 --       -> (3) efficient way : Btree structure
 -- * Bugs:
 --   * Insert overwrites previous values
 --       -> separate create from insert (new command)
---       -> (1) improve insert to lookup existing table
+--       -> [X] (1) improve insert to lookup existing table
 --   * fromJust when projecting -> unknown column name?
 --       -> error handling
 
 spec :: Spec
 spec = describe "SQL Mini Interpreter" $ do
+
+  let
+    populateMapDB rels = populate rels :: MapDB
 
   it "interprets '.exit' as Exit command" $ do
     interpret ".exit" `shouldBe` Exit
@@ -41,7 +44,7 @@ spec = describe "SQL Mini Interpreter" $ do
           _ <- runCommand "INSERT INTO Foo (Col1) VALUES ('helli')"
           runCommand "SELECT Col1 FROM Foo"
 
-    evalState output (populate []) `shouldBe` Just (pack $ show $ (Right (Relation ["Col1"] [["helli"]]) :: Either Text Relation))
+    evalState output (populateMapDB []) `shouldBe` Just (pack $ show $ (Right (Relation ["Col1"] [["helli"]]) :: Either Text Relation))
 
   describe "SQL Parser"$ do
 
@@ -82,29 +85,29 @@ spec = describe "SQL Mini Interpreter" $ do
         relationdef = Relation [ "col4"] [["d"], ["e"], ["f"]]
 
     it "evaluates a relation" $ do
-      let  db = populate [ ( "Foo", relationabc) ]
+      let  db = populateMapDB [ ( "Foo", relationabc) ]
       evaluate (Rel "Foo") db
         `shouldBe` Right relationabc
 
     it "evaluates another relation" $ do
-      let db = populate [ ( "Bar", relationdef) ]
+      let db = populateMapDB [ ( "Bar", relationdef) ]
       evaluate (Rel "Bar") db
         `shouldBe` Right relationdef
 
     it "evaluates a  relation in a database with several tables" $ do
-      let db = populate [ ( "Foo", relationabc)
+      let db = populateMapDB [ ( "Foo", relationabc)
                         , ( "Bar", relationdef)
                         ]
       evaluate (Rel "Bar") db
         `shouldBe` Right relationdef
 
     it "returns error when evaluating relation given relation is not in DB" $ do
-      let db = populate []
+      let db = populateMapDB []
       evaluate (Rel "Bar") db
         `shouldBe` Left "no relation with name \"Bar\""
 
     it "evaluates cartesian product of 2 relations" $ do
-      let db = populate [ ("Foo", relationabc)
+      let db = populateMapDB [ ("Foo", relationabc)
                         , ( "Bar", relationdef)
                         ]
       evaluate (Prod [ Rel "Foo", Rel "Bar"]) db
@@ -113,28 +116,28 @@ spec = describe "SQL Mini Interpreter" $ do
                                      , t2 <- [["d"], ["e"], ["f"]]] )
 
     it "returns error when evaluating cartesian product given one relation does not exist" $ do
-      let db = populate [ ("Foo", relationabc) ]
+      let db = populateMapDB [ ("Foo", relationabc) ]
       evaluate (Prod [ Rel "Foo", Rel "Bar"]) db
         `shouldBe` Left "no relation with name \"Bar\""
 
     it "filter columns when evaluating select clause" $ do
-      let  db = populate [ ( "Foo", relationabc) ]
+      let  db = populateMapDB [ ( "Foo", relationabc) ]
       evaluate (Proj [ "col1"] (Rel "Foo")) db
         `shouldBe` Right (Relation [ "col1" ] [["a"]])
 
     it "filter columns when evaluating select clause" $ do
-      let  db = populate [ ( "Foo", relationabc) ]
+      let  db = populateMapDB [ ( "Foo", relationabc) ]
       evaluate (Proj [ "col2"] (Rel "Foo")) db
         `shouldBe` Right (Relation [ "col2" ] [["b"]])
 
     it "creates a table with input data" $ do
-      let db = populate []
+      let db = populateMapDB []
 
       evaluate (Create "Foo" (Relation [ "Col1" ] [ [ "hello" ]])) db
         `shouldBe` Right (Relation [ "Col1"] [ [ "hello"] ])
 
     it "insert data into an existing table" $ do
-      let db = populate []
+      let db = populateMapDB []
           sql = do
             _ <- evaluateDB (Create' "Foo" [ "Col1" ])
             _ <- evaluateDB (Add "Foo" (Relation [ "Col1" ] [ [ "helli" ]]))
@@ -145,7 +148,7 @@ spec = describe "SQL Mini Interpreter" $ do
         `shouldBe` Right (Relation [ "Col1"] [ [ "helli"] , ["hello"] ])
 
     it "fails to insert data when columns don't match" $ do
-      let db = populate []
+      let db = populateMapDB []
           sql = do
             _ <- evaluateDB (Create' "Foo" [ "Col1" ])
             _ <- evaluateDB (Add "Foo" (Relation [ "Col1" ] [ [ "helli" ]]))
@@ -156,7 +159,7 @@ spec = describe "SQL Mini Interpreter" $ do
         `shouldBe` Left "Incompatible relation schemas"
 
     it "evaluates a select over a create" $ do
-      let db = populate []
+      let db = populateMapDB []
           sql = do
             _ <- evaluateDB (Create "Foo" (Relation [ "Col1" ] [ [ "hello" ]]))
             _ <- evaluateDB (Create "Bar" (Relation [ "Col2" ] [ [ "helli" ]]))
