@@ -1,12 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 module ConsoleSpec where
 
-import Data.Monoid((<>))
-import Interpreter
-import Sql
-import Test.Hspec
-import Control.Monad.State
-import Data.Text
+import           Control.Monad.State
+import           Data.Monoid         ((<>))
+import           Data.Text
+import           Interpreter
+import           Sql
+import           Test.Hspec
 
 
 -- TODO

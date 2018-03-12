@@ -1,23 +1,24 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TupleSections              #-}
+{-# LANGUAGE TypeSynonymInstances       #-}
+
 module Sql.Evaluator
   ( evaluate, DB(..), MapDB, populate, evaluateDB, execDatabase, runDatabase, toRelational
   , Relational(..), Relation(..)
   ) where
 
-import Data.Maybe
-import Sql.Parser(Sql(..), Expr(..))
-import Control.Monad.State
-import Control.Monad.Except
-import Data.Monoid
-import Data.Text hiding (foldr)
-import Data.List(elemIndex)
-import qualified Data.Map as Map
-import Prelude hiding (lookup)
-import Sql.DB
+import           Control.Monad.Except
+import           Control.Monad.State
+import           Data.List            (elemIndex)
+import qualified Data.Map             as Map
+import           Data.Maybe
+import           Data.Monoid
+import           Data.Text            hiding (foldr)
+import           Prelude              hiding (lookup)
+import           Sql.DB
+import           Sql.Parser           (Expr (..), Sql (..))
 
 data Relational = Rel TableName
                 | Proj [ ColumnName ] Relational

@@ -8,6 +8,9 @@ import Data.Word
 
 -- ** Binary DB
 
-type Bytes = Vector.Vector Word8
+newtype Bytes = Bytes { bytes :: Vector.Vector Word8 }
 
 instance DB Bytes where
+  initDB = Bytes Vector.empty
+  lookup _tableName _bytes = undefined
+  insert _tableName _relation _bytes = undefined

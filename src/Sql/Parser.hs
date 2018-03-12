@@ -1,13 +1,13 @@
- {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TupleSections              #-}
 module Sql.Parser (Sql(..), Expr(..), parseSQL) where
 
-import Control.Monad.Identity
-import Data.Text hiding (foldr)
-import Text.Parsec hiding (label, State)
-import Data.Maybe
-import Data.String
+import           Control.Monad.Identity
+import           Data.Maybe
+import           Data.String
+import           Data.Text              hiding (foldr)
+import           Text.Parsec            hiding (State, label)
 
 data Expr = Number Int
           | Col Text

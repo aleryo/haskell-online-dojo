@@ -1,7 +1,8 @@
 module Main where
 
-import Interpreter
-import System.IO
+import           Interpreter
+import           System.IO
+
 
 -- Sample session
 -- haskell-sqlite v0.1

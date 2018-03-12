@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 module Interpreter
     ( -- * Top-level CLI
       console
@@ -8,11 +9,11 @@ module Interpreter
     )
 where
 
-import Control.Monad.State
-import Data.Text
-import qualified Data.Text.IO as IO
-import Data.Monoid((<>))
-import Sql
+import           Control.Monad.State
+import           Data.Monoid         ((<>))
+import           Data.Text
+import qualified Data.Text.IO        as IO
+import           Sql
 
 data Command = Exit
              | SqlStatement Sql
