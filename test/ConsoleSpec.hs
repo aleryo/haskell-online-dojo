@@ -6,6 +6,7 @@ import           Data.Monoid         ((<>))
 import           Data.Text
 import           Interpreter
 import           Sql
+import           Sql.DB.MapDB
 import           Test.Hspec
 
 
