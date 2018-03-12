@@ -4,6 +4,7 @@
 module Sql.DB.VectorSpec where
 
 import           Data.Monoid     ((<>))
+import           Data.Serialize
 import           Data.Text       (Text, pack)
 import qualified Data.Vector     as Vector
 import           Sql.DB          as DB
@@ -17,7 +18,19 @@ spec = describe "Binary Representation of DB" $ do
   it "initialise empty vector" $ do
     bytes initDB `shouldBe` Vector.empty
 
-  it "can lookup inserted relations" $ property $ prop_canLookupInsertedRelations
+  it "can seriaze relations" $ property $ prop_canRoundtripRelationSerialization
+  it "can lookup inserted relations" $ pending --property $ prop_canLookupInsertedRelations
+
+prop_canRoundtripRelationSerialization :: Relation -> Bool
+prop_canRoundtripRelationSerialization rel =
+  runGet get (runPut (put rel)) == Right rel
+
+prop_canLookupInsertedRelations :: [ (TblName, Relation) ] -> Bool
+prop_canLookupInsertedRelations tables =
+  let
+    finalDB = foldr (\ (TblName n,r) db ->  insert n r db) (initDB :: Bytes) tables
+  in
+    all ( \(TblName tname, rel) -> DB.lookup tname finalDB == Just rel) tables
 
 newtype TblName = TblName Text
   deriving (Eq, Show)
@@ -54,10 +67,3 @@ genLines numCol = vectorOf numCol genData
 
 genData :: Gen Text
 genData = pack <$> listOf (choose ('a', 'z'))
-
-prop_canLookupInsertedRelations :: [ (TblName, Relation) ] -> Bool
-prop_canLookupInsertedRelations tables =
-  let
-    finalDB = foldr (\ (TblName n,r) db ->  insert n r db) (initDB :: Bytes) tables
-  in
-    all ( \(TblName tname, rel) -> DB.lookup tname finalDB == Just rel) tables

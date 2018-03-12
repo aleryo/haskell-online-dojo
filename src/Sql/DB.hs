@@ -6,7 +6,6 @@ type TableName = Text
 
 type ColumnName = Text
 
-
 data Relation = Relation { columnNames :: [ Text ]
                          , rows        :: [[ Text ]]
                          }
