@@ -14,6 +14,7 @@ import           Data.Monoid         ((<>))
 import           Data.Text
 import qualified Data.Text.IO        as IO
 import           Sql
+import           Sql.DB.MapDB
 
 data Command = Exit
              | SqlStatement Sql

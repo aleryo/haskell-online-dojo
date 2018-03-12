@@ -3,16 +3,14 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TupleSections              #-}
 {-# LANGUAGE TypeSynonymInstances       #-}
-
 module Sql.Evaluator
-  ( evaluate, DB(..), MapDB, populate, evaluateDB, execDatabase, runDatabase, toRelational
+  ( evaluate, DB(..), populate, evaluateDB, execDatabase, runDatabase, toRelational
   , Relational(..), Relation(..)
   ) where
 
 import           Control.Monad.Except
 import           Control.Monad.State
 import           Data.List            (elemIndex)
-import qualified Data.Map             as Map
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Text            hiding (foldr)
@@ -102,12 +100,3 @@ toRelational (Insert tableName cols values) =
 eval :: Expr -> Text
 eval (Str s) = s
 eval expr    = error $ "cannot eval " <> show expr
-
-
--- ** Naive Implementation as Map
-type MapDB = Map.Map TableName Relation
-
-instance DB MapDB where
-  lookup = Map.lookup
-  insert = Map.insert
-  initDB = Map.empty
