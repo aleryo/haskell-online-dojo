@@ -25,7 +25,7 @@ Analyse syntaxique d'un texte pour produire une expression SQL
  toRelational :: SQL -> Relational
 ```
 
-Transforme une SQL expression vers algèbre relationnelle
+Transforme une expression SQL vers algèbre relationnelle
 
 ```
 evaluateDB :: Relational -> DB -> Either Error (Relation, DB)
@@ -48,3 +48,7 @@ stream :: Relational -> DB -> [ DBOps ]
 * [Session 6](https://www.youtube.com/watch?v=u-UdEeig-0U)
 * [Session 7](https://youtu.be/C3owSoky7M0)
 * [Session 8](https://youtu.be/eGZB0VltlKY)
+* [Session 9](https://www.youtube.com/watch?v=1RAZ_hjeJCU)
+* [Session 10](https://www.youtube.com/watch?v=2IY-JNcfal8)
+* [Session 11](https://www.youtube.com/watch?v=1Dh_dAmx7Iw)
+* [Session 12](https://www.youtube.com/watch?v=65GfONxycXo)
