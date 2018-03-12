@@ -43,6 +43,7 @@ test-suite haskell-sqlite-test
                      , hspec
                      , hspec-discover
                      , mtl
+                     , QuickCheck
                      , text
                      , vector
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
