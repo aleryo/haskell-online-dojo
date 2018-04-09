@@ -3,10 +3,9 @@
 {-# LANGUAGE ViewPatterns      #-}
 module Sql.DB.VectorSpec where
 
-import           Data.Monoid     ((<>))
+import           Data.Monoid
 import           Data.Serialize
 import           Data.Text       (Text, pack)
-import qualified Data.Vector     as Vector
 import           Sql.DB          as DB
 import           Sql.DB.Vector
 import           Test.Hspec
@@ -16,24 +15,29 @@ spec :: Spec
 spec = describe "Binary Representation of DB" $ do
 
   it "initialise empty vector" $ do
-    bytes initDB `shouldBe` Vector.empty
+    bytes initDB `shouldBe` mempty
 
   it "can seriaze relations" $ property $ prop_canRoundtripRelationSerialization
-  it "can lookup inserted relations" $ pending --property $ prop_canLookupInsertedRelations
+  it "can lookup inserted relations" $ withMaxSuccess 30 $ property $ prop_canLookupInsertedRelations
 
 prop_canRoundtripRelationSerialization :: Relation -> Bool
 prop_canRoundtripRelationSerialization rel =
   runGet get (runPut (put rel)) == Right rel
 
-prop_canLookupInsertedRelations :: [ (TblName, Relation) ] -> Bool
-prop_canLookupInsertedRelations tables =
+prop_canLookupInsertedRelations :: [ Relation ] -> Bool
+prop_canLookupInsertedRelations rels =
   let
-    finalDB = foldr (\ (TblName n,r) db ->  insert n r db) (initDB :: Bytes) tables
+    tables = zip mkTableNames rels
+    insert' (TblName n, r) db = insert n r db
+    finalDB = foldr insert' (initDB :: Bytes) tables
   in
     all ( \(TblName tname, rel) -> DB.lookup tname finalDB == Just rel) tables
 
 newtype TblName = TblName Text
   deriving (Eq, Show)
+
+mkTableNames :: [ TblName ]
+mkTableNames = fmap ( \ n -> TblName $ pack $ "table-" <> show (n :: Int)) [ 1 .. ]
 
 instance Arbitrary TblName where
   arbitrary = TblName <$> genTableName

@@ -2,16 +2,20 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 module Sql.DB.Vector where
 
+import           Data.ByteString
+import           Data.Monoid
 import           Data.Serialize
 import           Data.Text.Encoding
-import qualified Data.Vector        as Vector
-import           Data.Word
 import           Sql.DB
 
 -- ** Binary DB
 
-newtype Bytes = Bytes { bytes :: Vector.Vector Word8 }
+newtype Bytes = Bytes { bytes :: ByteString }
   deriving (Eq,Show)
+
+instance Serialize TableName where
+  put = put . encodeUtf8
+  get = decodeUtf8 <$> get
 
 instance Serialize Relation  where
   put (Relation cols rws) = put (fmap encodeUtf8 cols) >> put (fmap (fmap encodeUtf8) rws)
@@ -21,6 +25,20 @@ instance Serialize Relation  where
     pure $ Relation cols rws
 
 instance DB Bytes where
-  initDB                         = Bytes Vector.empty
-  insert _tableName _relation db = db
-  lookup _tableName _bytes       = Nothing
+  initDB                       = Bytes mempty
+  insert tableName relation (Bytes db) =
+      Bytes $ runPut (put tableName  >> put relation) <> db
+  lookup tableName (Bytes db)    =
+    let
+      getLookup = do
+        tbl <- get
+        rel <- get
+        if (tbl == tableName)
+          then pure (Just rel)
+          else getLookup
+
+      reading = runGet getLookup db
+    in
+      case reading of
+        Left _err -> Nothing
+        Right t   -> t

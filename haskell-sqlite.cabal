@@ -19,6 +19,7 @@ library
   ghc-options: -Wall -Werror -fno-warn-orphans
   other-modules:  Sql.Parser, Sql.Evaluator
   build-depends:       base
+                     , bytestring
                      , cereal
                      , mtl
                      , text
