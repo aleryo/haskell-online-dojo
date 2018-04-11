@@ -52,3 +52,4 @@ stream :: Relational -> DB -> [ DBOps ]
 * [Session 10](https://www.youtube.com/watch?v=2IY-JNcfal8)
 * [Session 11](https://www.youtube.com/watch?v=1Dh_dAmx7Iw)
 * [Session 12](https://www.youtube.com/watch?v=65GfONxycXo)
+* [Session 14](https://youtu.be/hwg9Jgym99c)
