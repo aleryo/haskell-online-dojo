@@ -14,7 +14,7 @@ import           Data.Monoid         ((<>))
 import           Data.Text
 import qualified Data.Text.IO        as IO
 import           Sql
-import           Sql.DB.MapDB
+import           Sql.DB.VectorDB
 
 data Command = Exit
              | SqlStatement Sql
@@ -47,7 +47,7 @@ console' db = do
     Nothing  -> IO.putStrLn "bye!"
     Just msg -> IO.putStrLn msg >> console' db'
 
-loadDB :: IO MapDB
+loadDB :: IO BytesDB
 loadDB = pure initDB
 
 console :: IO ()

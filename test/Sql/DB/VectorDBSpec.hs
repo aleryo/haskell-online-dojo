@@ -1,13 +1,13 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns      #-}
-module Sql.DB.VectorSpec where
+module Sql.DB.VectorDBSpec where
 
 import           Data.Monoid
 import           Data.Serialize
 import           Data.Text       (Text, pack)
 import           Sql.DB          as DB
-import           Sql.DB.Vector
+import           Sql.DB.VectorDB
 import           Test.Hspec
 import           Test.QuickCheck
 
@@ -29,7 +29,7 @@ prop_canLookupInsertedRelations rels =
   let
     tables = zip mkTableNames rels
     insert' (TblName n, r) db = insert n r db
-    finalDB = foldr insert' (initDB :: Bytes) tables
+    finalDB = foldr insert' (initDB :: BytesDB) tables
   in
     all ( \(TblName tname, rel) -> DB.lookup tname finalDB == Just rel) tables
 

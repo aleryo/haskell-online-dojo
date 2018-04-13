@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-module Sql.DB.Vector where
+module Sql.DB.VectorDB where
 
 import           Data.ByteString
 import           Data.Monoid
@@ -10,7 +10,7 @@ import           Sql.DB
 
 -- ** Binary DB
 
-newtype Bytes = Bytes { bytes :: ByteString }
+newtype BytesDB = BytesDB { bytes :: ByteString }
   deriving (Eq,Show)
 
 instance Serialize TableName where
@@ -24,11 +24,11 @@ instance Serialize Relation  where
     rws <- fmap (fmap decodeUtf8) <$> get
     pure $ Relation cols rws
 
-instance DB Bytes where
-  initDB                       = Bytes mempty
-  insert tableName relation (Bytes db) =
-      Bytes $ runPut (put tableName  >> put relation) <> db
-  lookup tableName (Bytes db)    =
+instance DB BytesDB where
+  initDB                       = BytesDB mempty
+  insert tableName relation (BytesDB db) =
+    BytesDB $ runPut (put tableName  >> put relation) <> db
+  lookup tableName (BytesDB db)    =
     let
       getLookup = do
         tbl <- get
