@@ -10,6 +10,7 @@ module Interpreter
 where
 
 import           Control.Monad.State
+import qualified Data.ByteString     as BS
 import           Data.Monoid         ((<>))
 import           Data.Text
 import qualified Data.Text.IO        as IO
@@ -48,7 +49,16 @@ console' db = do
     Just msg -> IO.putStrLn msg >> console' db'
 
 loadDB :: IO BytesDB
-loadDB = pure initDB
+loadDB = do
+  db <- BS.readFile "./sqlite.db"
+  pure BytesDB { bytes = db }
+
+saveDB :: BytesDB -> IO ()
+saveDB BytesDB { bytes = db } = do
+  BS.writeFile "./sqlite.db" db
 
 console :: IO ()
-console = loadDB >>= console'
+console = do
+    db <- loadDB
+    console' db
+    saveDB db
