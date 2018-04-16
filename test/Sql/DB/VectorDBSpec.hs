@@ -5,11 +5,12 @@ module Sql.DB.VectorDBSpec where
 
 import           Data.Monoid
 import           Data.Serialize
-import           Data.Text       (Text, pack)
-import           Sql.DB          as DB
+import           Data.Text               (Text, pack)
+import           Sql.DB                  as DB
 import           Sql.DB.VectorDB
 import           Test.Hspec
 import           Test.QuickCheck
+import           Test.QuickCheck.Monadic
 
 spec :: Spec
 spec = describe "Binary Representation of DB" $ do
@@ -17,8 +18,19 @@ spec = describe "Binary Representation of DB" $ do
   it "initialise empty vector" $ do
     bytes initDB `shouldBe` mempty
 
-  it "can seriaze relations" $ property $ prop_canRoundtripRelationSerialization
+  it "can load/store a db" $ do
+    rel <- generate arbitrary
+    let vectorDB = insert "table-1" rel initDB
+    db <- do
+      saveDB vectorDB
+      loadDB
+
+    db `shouldBe` vectorDB
+
+  it "can seriaze relations" $ withMaxSuccess 30 $ property $ prop_canRoundtripRelationSerialization
   it "can lookup inserted relations" $ withMaxSuccess 30 $ property $ prop_canLookupInsertedRelations
+  it "can load/store from file" $ withMaxSuccess 30 $ property $ prop_canStoreAndLoadAVectorDB
+
 
 prop_canRoundtripRelationSerialization :: Relation -> Bool
 prop_canRoundtripRelationSerialization rel =
@@ -32,6 +44,15 @@ prop_canLookupInsertedRelations rels =
     finalDB = foldr insert' (initDB :: BytesDB) tables
   in
     all ( \(TblName tname, rel) -> DB.lookup tname finalDB == Just rel) tables
+
+prop_canStoreAndLoadAVectorDB :: Relation -> Property
+prop_canStoreAndLoadAVectorDB rel = monadicIO $ do
+  let vectorDB = insert "table-1" rel initDB
+  db <- run $ do
+    saveDB vectorDB
+    loadDB
+
+  assert $ db == vectorDB
 
 newtype TblName = TblName Text
   deriving (Eq, Show)

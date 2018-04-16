@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Interpreter
@@ -10,7 +11,6 @@ module Interpreter
 where
 
 import           Control.Monad.State
-import qualified Data.ByteString     as BS
 import           Data.Monoid         ((<>))
 import           Data.Text
 import qualified Data.Text.IO        as IO
@@ -47,15 +47,6 @@ console' db = do
   case output of
     Nothing  -> IO.putStrLn "bye!"
     Just msg -> IO.putStrLn msg >> console' db'
-
-loadDB :: IO BytesDB
-loadDB = do
-  db <- BS.readFile "./sqlite.db"
-  pure BytesDB { bytes = db }
-
-saveDB :: BytesDB -> IO ()
-saveDB BytesDB { bytes = db } = do
-  BS.writeFile "./sqlite.db" db
 
 console :: IO ()
 console = do

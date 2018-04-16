@@ -1,8 +1,9 @@
 {-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE NamedFieldPuns       #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 module Sql.DB.VectorDB where
 
-import           Data.ByteString
+import           Data.ByteString    as BS
 import           Data.Monoid
 import           Data.Serialize
 import           Data.Text.Encoding
@@ -12,6 +13,17 @@ import           Sql.DB
 
 newtype BytesDB = BytesDB { bytes :: ByteString }
   deriving (Eq,Show)
+
+makeBytesDB :: (Monad m) => ByteString -> m BytesDB
+makeBytesDB = pure . BytesDB
+
+loadDB :: IO BytesDB
+loadDB =
+  BS.readFile "./sqlite.db" >>= makeBytesDB
+
+saveDB :: BytesDB -> IO ()
+saveDB BytesDB { bytes } = BS.writeFile "./sqlite.db" bytes
+
 
 instance Serialize TableName where
   put = put . encodeUtf8
