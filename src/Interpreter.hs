@@ -1,4 +1,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Interpreter
@@ -15,6 +18,7 @@ import           Data.Monoid         ((<>))
 import           Data.Text
 import qualified Data.Text.IO        as IO
 import           Sql
+import           Sql.DB
 import           Sql.DB.VectorDB
 
 data Command = Exit
@@ -39,17 +43,15 @@ runCommand line = do
        Unknown err     -> return $ Just $ "unknown command:" <> err
        Exit            -> return $ Nothing
 
-console' :: (DB db) => db -> IO ()
+console' :: (DB db, Persistable db io, MonadIO io) => db -> io ()
 console' db = do
-  putStr "> "
-  line <- pack <$> getLine
+  liftIO $ putStr "> "
+  line <- pack <$> liftIO getLine
   let (output,db')  = runState (runCommand line) db
+  saveDB db'
   case output of
-    Nothing  -> IO.putStrLn "bye!"
-    Just msg -> IO.putStrLn msg >> console' db'
+    Nothing  -> liftIO $ IO.putStrLn "bye!"
+    Just msg -> liftIO ( IO.putStrLn msg) >> console' db'
 
 console :: IO ()
-console = do
-    db <- loadDB
-    console' db
-    saveDB db
+console = loadDB @BytesDB >>= console'

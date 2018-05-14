@@ -37,9 +37,6 @@ spec = describe "SQL Mini Interpreter" $ do
   it "interprets '.exit' as Exit command" $ do
     interpret ".exit" `shouldBe` Exit
 
-  it "interprets '.load file.db' as Database load command" $ do
-    pending
-
   it "interprets SQL commands" $ do
     let output = do
           _ <- runCommand "INSERT INTO Foo (Col1) VALUES ('helli')"

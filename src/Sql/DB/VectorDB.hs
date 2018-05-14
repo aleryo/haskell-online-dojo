@@ -1,6 +1,7 @@
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE NamedFieldPuns       #-}
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
 module Sql.DB.VectorDB where
 
 import           Data.ByteString    as BS
@@ -17,12 +18,9 @@ newtype BytesDB = BytesDB { bytes :: ByteString }
 makeBytesDB :: (Monad m) => ByteString -> m BytesDB
 makeBytesDB = pure . BytesDB
 
-loadDB :: IO BytesDB
-loadDB =
-  BS.readFile "./sqlite.db" >>= makeBytesDB
-
-saveDB :: BytesDB -> IO ()
-saveDB BytesDB { bytes } = BS.writeFile "./sqlite.db" bytes
+instance Persistable BytesDB IO where
+  loadDB = BS.readFile "./sqlite.db" >>= makeBytesDB
+  saveDB BytesDB { bytes } = BS.writeFile "./sqlite.db" bytes
 
 
 instance Serialize TableName where
