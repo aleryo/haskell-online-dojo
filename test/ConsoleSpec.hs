@@ -13,20 +13,20 @@ import           Test.Hspec
 -- TODO
 -- * durability of DB:
 --   * serialize to/from binary: relatively simple, define a binary form then RW
---       -> (2.5) serialize/deserialize binary to file
---       -> (3.5) map binary DB to file (e.g. mmap)
+--       -> [x] serialize/deserialize binary to file
+--       -> map binary DB to file (e.g. mmap)
 --   * store modification journal
 --       -> expose modification operations as independent "DSL"
---       -> (2.2) keep db log/ reload from log (event store) -> transaction
+--       -> keep db log/ reload from log (event store) -> transaction
 --   * operate DB ops on a "more efficient" representation (e.g. BTree)
---       -> (2) naive way: an array of binary data
---       -> (3) efficient way : Btree structure
+--       -> [x] naive way: an array of binary data
+--       -> efficient way : Btree structure
 -- * Bugs:
 --   * Insert overwrites previous values
---       -> separate create from insert (new command)
---       -> [X] (1) improve insert to lookup existing table
+--       -> (2) separate create from insert (new command)
+--       -> [X] improve insert to lookup existing table
 --   * fromJust when projecting -> unknown column name?
---       -> error handling
+--       -> (1) error handling
 
 spec :: Spec
 spec = describe "SQL Mini Interpreter" $ do
@@ -127,6 +127,11 @@ spec = describe "SQL Mini Interpreter" $ do
       let  db = populateMapDB [ ( "Foo", relationabc) ]
       evaluate (Proj [ "col2"] (Rel "Foo")) db
         `shouldBe` Right (Relation [ "col2" ] [["b"]])
+
+    it "returns error when filtering columns on SELECT given column does not exist" $ do
+      let  db = populateMapDB [ ( "Foo", relationabc) ]
+      evaluate (Proj [ "col4"] (Rel "Foo")) db
+        `shouldBe` Left "no column with name \"col4\""
 
     it "creates a table with input data" $ do
       let db = populateMapDB []

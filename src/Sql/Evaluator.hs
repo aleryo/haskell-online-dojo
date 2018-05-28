@@ -33,6 +33,9 @@ type EvaluationError = Text
 relationNotFound :: TableName -> EvaluationError
 relationNotFound name = "no relation with name " <> (pack $ show name)
 
+columnNotFound :: ColumnName -> EvaluationError
+columnNotFound name = "no column with name " <> (pack $ show name)
+
 newtype Database db a = Database { tables :: ExceptT EvaluationError (State db) a }
   deriving ( Functor
            , Applicative
@@ -61,10 +64,11 @@ evaluateDB (Prod [rel1,rel2]) = do
 
 evaluateDB (Proj [col] rel) = do
   Relation cols rws <- evaluateDB rel
-  let
-    projectCols row = [ row !! colNum ]
-    colNum = fromJust $ elemIndex col cols
-  pure $ Relation [ col ] (fmap projectCols rws)
+  case elemIndex col cols of
+    Just colNum ->
+      let projectCols row = [ row !! colNum ]
+      in  pure $ Relation [ col ] (fmap projectCols rws)
+    Nothing -> throwError $ columnNotFound col
 
 evaluateDB (Create tbl rel)  = do
   modify $ insert tbl rel
