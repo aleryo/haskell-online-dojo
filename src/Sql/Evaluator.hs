@@ -100,6 +100,8 @@ toRelational (Select projs tableNames) =
      relations ts    = Prod $ fmap Rel ts
 toRelational (Insert tableName cols values) =
    Create tableName (Relation cols (fmap (fmap eval) values))
+toRelational (CreateTable tableName cols) =
+   Create tableName (Relation cols [])
 
 eval :: Expr -> Text
 eval (Str s) = s

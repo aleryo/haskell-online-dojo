@@ -86,6 +86,10 @@ spec = describe "SQL Mini Interpreter" $ do
       toRelational (Insert "Foo" [ "Col1" ] [ [ "hello"] ])
       `shouldBe` Create "Foo" (Relation [ "Col1" ] [["hello"]])
 
+    it "converts an insert statement" $ do
+      toRelational (CreateTable "Foo" [ "Col1" ] )
+      `shouldBe` Create "Foo" (Relation [ "Col1" ] [])
+
   describe "Expression evaluation" $ do
 
     let relationabc = Relation [ "col1", "col2", "col3"] [["a", "b", "c"]]
