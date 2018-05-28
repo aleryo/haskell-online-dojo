@@ -22,7 +22,8 @@ type TableName = Text
 type ColumnName = Text
 
 data Sql = Select [ Expr ] [ TableName ]
-  | Insert TableName [ ColumnName ] [ [ Expr ] ]
+         | Insert TableName [ ColumnName ] [ [ Expr ] ]
+         | CreateTable TableName [ ColumnName ]
   deriving (Eq, Show)
 
 
@@ -32,7 +33,7 @@ parseSQL text =
   of
     Left err     -> Left . pack $ show err
     Right result -> Right result
-  where sql = selectClause <|> insertClause
+  where sql = selectClause <|> insertClause <|> createClause
 
 type Parser a = ParsecT Text () Identity a
 
@@ -61,6 +62,15 @@ insertClause = do
   spaces >> string_ "VALUES" >> spaces
   values <- betweenParens expressionList
   return (Insert table columns [values])
+
+createClause :: Parser Sql
+createClause = do
+  string_ "CREATE" >> spaces >> string_ "TABLE"
+  spaces
+  table <- tableName
+  spaces
+  columns <- betweenParens columnList
+  return (CreateTable table columns)
 
 betweenParens :: Parser a -> Parser a
 betweenParens inner = do

@@ -26,7 +26,7 @@ import           Test.Hspec
 --       -> (2) separate create from insert (new command)
 --       -> [X] improve insert to lookup existing table
 --   * fromJust when projecting -> unknown column name?
---       -> (1) error handling
+--       -> [X] error handling
 
 spec :: Spec
 spec = describe "SQL Mini Interpreter" $ do
@@ -39,10 +39,13 @@ spec = describe "SQL Mini Interpreter" $ do
 
   it "interprets SQL commands" $ do
     let output = do
+--          _ <- runCommand "CREATE TABLE Foo (Col1)"
           _ <- runCommand "INSERT INTO Foo (Col1) VALUES ('helli')"
+--          _ <- runCommand "INSERT INTO Foo (Col1) VALUES ('hello')"
           runCommand "SELECT Col1 FROM Foo"
 
     evalState output (populateMapDB []) `shouldBe` Just (pack $ show $ (Right (Relation ["Col1"] [["helli"]]) :: Either Text Relation))
+--    evalState output (populateMapDB []) `shouldBe` Just (pack $ show $ (Right (Relation ["Col1"] [["helli"], ["hello"]]) :: Either Text Relation))
 
   describe "SQL Parser"$ do
 
@@ -51,18 +54,24 @@ spec = describe "SQL Mini Interpreter" $ do
 
     it "interprets 'SELECT 1' as an SqlStatement" $ do
       interpret "SELECT 1" `shouldBe` SqlStatement (Select [ Number 1 ] [])
+
     it "interprets 'SELECT Foo, Bar' as a SqlStatement" $ do
       interpret "SELECT Foo,Bar" `shouldBe` SqlStatement (Select [ Col "Foo", Col "Bar"] [])
 
     it "interprets 'SELECT Foo, Bar FROM baz' as a SqlStatement" $ do
       interpret "SELECT Foo  , Bar FROM baz"
         `shouldBe` SqlStatement (Select [ Col "Foo", Col "Bar"] ["baz"] )
+
     it "interprets unknown string  as Unknown command" $ do
-      interpret "foo" `shouldBe` Unknown "(line 1, column 1):\nunexpected \"f\"\nexpecting \"SELECT\" or \"INSERT\""
+      interpret "foo" `shouldBe` Unknown "(line 1, column 1):\nunexpected \"f\"\nexpecting \"SELECT\", \"INSERT\" or \"CREATE\""
 
     it "interprets INSERT INTO Foo (Col1) VALUES ('hello') as a SqlStatement" $ do
       interpret "INSERT INTO Foo (Col1) VALUES ('hello')"
          `shouldBe` SqlStatement (Insert "Foo" [ "Col1" ] [ [ "hello" ] ])
+
+    it "interprets CREATE TABLE  Foo (Col1) as a SqlStatement" $ do
+      interpret "CREATE TABLE Foo (Col1)"
+         `shouldBe` SqlStatement (CreateTable "Foo" [ "Col1" ])
 
   describe "SQL To Relational" $ do
     it "converts a simple Select statement" $ do
