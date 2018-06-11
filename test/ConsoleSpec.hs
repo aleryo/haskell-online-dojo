@@ -22,11 +22,15 @@ import           Test.Hspec
 --       -> [x] naive way: an array of binary data
 --       -> efficient way : Btree structure
 -- * Bugs:
---   * Insert overwrites previous values
+--   * [ ] handle only 2 tables in product
+--   * [ ] handle only 1 column in projection
+--   * nsert overwrites previous values
 --       -> [X] separate create from insert (new command)
 --       -> [X] improve insert to lookup existing table
 --   * fromJust when projecting -> unknown column name?
 --       -> [X] error handling
+-- * Improvements:
+--   * Rename DB -> Tables
 
 spec :: Spec
 spec = describe "SQL Mini Interpreter" $ do
@@ -93,7 +97,8 @@ spec = describe "SQL Mini Interpreter" $ do
   describe "Expression evaluation" $ do
 
     let relationabc = Relation [ "col1", "col2", "col3"] [["a", "b", "c"]]
-        relationdef = Relation [ "col4"] [["d"], ["e"], ["f"]]
+        relationdef = Relation [ "col4" ] [["d"], ["e"], ["f"]]
+        relationghc = Relation [ "col5" ] [["ghc (pun intended)"]]
 
     it "evaluates a relation" $ do
       let  db = populateMapDB [ ( "Foo", relationabc) ]
@@ -115,21 +120,23 @@ spec = describe "SQL Mini Interpreter" $ do
     it "returns error when evaluating relation given relation is not in DB" $ do
       let db = populateMapDB []
       evaluate (Rel "Bar") db
-        `shouldBe` Left "no relation with name \"Bar\""
+        `shouldBe` Left "no table with name \"Bar\""
 
-    it "evaluates cartesian product of 2 relations" $ do
+    it "evaluates cartesian product of 3 relations" $ do
       let db = populateMapDB [ ("Foo", relationabc)
                         , ( "Bar", relationdef)
+                        , ("Baz", relationghc)
                         ]
-      evaluate (Prod [ Rel "Foo", Rel "Bar"]) db
-        `shouldBe` Right (Relation [ "col1", "col2", "col3", "col4" ]
-                           [t1 <> t2 | t1 <- [["a", "b", "c"]]
-                                     , t2 <- [["d"], ["e"], ["f"]]] )
+      evaluate (Prod [ Rel "Foo", Rel "Bar", Rel "Baz"]) db
+        `shouldBe` Right (Relation [ "col1", "col2", "col3", "col4", "col5" ]
+                           [row1 <> row2 <> row3 | row1 <- [["a", "b", "c"]]
+                                                 , row2 <- [["d"], ["e"], ["f"]]
+                                                 , row3 <- [["ghc (pun intended)"]]])
 
     it "returns error when evaluating cartesian product given one relation does not exist" $ do
       let db = populateMapDB [ ("Foo", relationabc) ]
       evaluate (Prod [ Rel "Foo", Rel "Bar"]) db
-        `shouldBe` Left "no relation with name \"Bar\""
+        `shouldBe` Left "no table with name \"Bar\""
 
     it "filter columns when evaluating select clause" $ do
       let  db = populateMapDB [ ( "Foo", relationabc) ]
