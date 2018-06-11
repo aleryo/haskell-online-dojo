@@ -21,9 +21,7 @@ import           Sql.Parser           (Expr (..), Sql (..))
 data Relational = Rel TableName
                 | Proj [ ColumnName ] Relational
                 | Prod [ Relational ]
-                | Create TableName Relation
-                | Create' TableName [ ColumnName ]
-                -- ^TODO: refactor, added to not break too many existing tests
+                | Create TableName [ ColumnName ]
                 | Add TableName Relation
   deriving (Eq, Show)
 
@@ -70,11 +68,7 @@ evaluateDB (Proj [col] rel) = do
       in  pure $ Relation [ col ] (fmap projectCols rws)
     Nothing -> throwError $ columnNotFound col
 
-evaluateDB (Create tbl rel)  = do
-  modify $ insert tbl rel
-  return rel
-
-evaluateDB (Create' tbl cols)  = do
+evaluateDB (Create tbl cols)  = do
   let rel = Relation cols []
   modify $ insert tbl rel
   return rel
@@ -99,9 +93,9 @@ toRelational (Select projs tableNames) =
      relations [ t ] = Rel t
      relations ts    = Prod $ fmap Rel ts
 toRelational (Insert tableName cols values) =
-   Create tableName (Relation cols (fmap (fmap eval) values))
+   Add tableName (Relation cols (fmap (fmap eval) values))
 toRelational (CreateTable tableName cols) =
-   Create tableName (Relation cols [])
+   Create tableName cols
 
 eval :: Expr -> Text
 eval (Str s) = s

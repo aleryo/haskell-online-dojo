@@ -23,7 +23,7 @@ import           Test.Hspec
 --       -> efficient way : Btree structure
 -- * Bugs:
 --   * Insert overwrites previous values
---       -> (2) separate create from insert (new command)
+--       -> [X] separate create from insert (new command)
 --       -> [X] improve insert to lookup existing table
 --   * fromJust when projecting -> unknown column name?
 --       -> [X] error handling
@@ -39,13 +39,13 @@ spec = describe "SQL Mini Interpreter" $ do
 
   it "interprets SQL commands" $ do
     let output = do
---          _ <- runCommand "CREATE TABLE Foo (Col1)"
+          _ <- runCommand "CREATE TABLE Foo (Col1)"
           _ <- runCommand "INSERT INTO Foo (Col1) VALUES ('helli')"
---          _ <- runCommand "INSERT INTO Foo (Col1) VALUES ('hello')"
+          _ <- runCommand "INSERT INTO Foo (Col1) VALUES ('hello')"
           runCommand "SELECT Col1 FROM Foo"
 
-    evalState output (populateMapDB []) `shouldBe` Just (pack $ show $ (Right (Relation ["Col1"] [["helli"]]) :: Either Text Relation))
---    evalState output (populateMapDB []) `shouldBe` Just (pack $ show $ (Right (Relation ["Col1"] [["helli"], ["hello"]]) :: Either Text Relation))
+    evalState output (populateMapDB [])
+      `shouldBe` Just (pack $ show $ (Right (Relation ["Col1"] [["helli"], ["hello"]]) :: Either Text Relation))
 
   describe "SQL Parser"$ do
 
@@ -84,11 +84,11 @@ spec = describe "SQL Mini Interpreter" $ do
 
     it "converts an insert statement" $ do
       toRelational (Insert "Foo" [ "Col1" ] [ [ "hello"] ])
-      `shouldBe` Create "Foo" (Relation [ "Col1" ] [["hello"]])
+      `shouldBe` Add "Foo" (Relation [ "Col1" ] [["hello"]])
 
-    it "converts an insert statement" $ do
+    it "converts an create table statement" $ do
       toRelational (CreateTable "Foo" [ "Col1" ] )
-      `shouldBe` Create "Foo" (Relation [ "Col1" ] [])
+      `shouldBe` Create "Foo" [ "Col1" ]
 
   describe "Expression evaluation" $ do
 
@@ -149,13 +149,13 @@ spec = describe "SQL Mini Interpreter" $ do
     it "creates a table with input data" $ do
       let db = populateMapDB []
 
-      evaluate (Create "Foo" (Relation [ "Col1" ] [ [ "hello" ]])) db
-        `shouldBe` Right (Relation [ "Col1"] [ [ "hello"] ])
+      evaluate (Create "Foo" [ "Col1" ]) db
+        `shouldBe` Right (Relation [ "Col1"] [])
 
     it "insert data into an existing table" $ do
       let db = populateMapDB []
           sql = do
-            _ <- evaluateDB (Create' "Foo" [ "Col1" ])
+            _ <- evaluateDB (Create "Foo" [ "Col1" ])
             _ <- evaluateDB (Add "Foo" (Relation [ "Col1" ] [ [ "helli" ]]))
             _ <- evaluateDB (Add "Foo" (Relation [ "Col1" ] [ [ "hello" ]]))
             evaluateDB (Rel "Foo")
@@ -166,7 +166,7 @@ spec = describe "SQL Mini Interpreter" $ do
     it "fails to insert data when columns don't match" $ do
       let db = populateMapDB []
           sql = do
-            _ <- evaluateDB (Create' "Foo" [ "Col1" ])
+            _ <- evaluateDB (Create "Foo" [ "Col1" ])
             _ <- evaluateDB (Add "Foo" (Relation [ "Col1" ] [ [ "helli" ]]))
             _ <- evaluateDB (Add "Foo" (Relation [ "Col2" ] [ [ "hello" ]]))
             evaluateDB (Rel "Foo")
@@ -174,11 +174,13 @@ spec = describe "SQL Mini Interpreter" $ do
       runDatabase db sql
         `shouldBe` Left "Incompatible relation schemas"
 
-    it "evaluates a select over a create" $ do
+    it "evaluates a select over a create and insert" $ do
       let db = populateMapDB []
           sql = do
-            _ <- evaluateDB (Create "Foo" (Relation [ "Col1" ] [ [ "hello" ]]))
-            _ <- evaluateDB (Create "Bar" (Relation [ "Col2" ] [ [ "helli" ]]))
+            _ <- evaluateDB (Create "Foo" [ "Col1" ])
+            _ <- evaluateDB (Create "Bar" [ "Col2" ])
+            _ <- evaluateDB (Add "Foo" (Relation [ "Col1" ] [ [ "hello" ]]))
+            _ <- evaluateDB (Add "Bar" (Relation [ "Col2" ] [ [ "helli" ]]))
             evaluateDB (Prod [ Rel "Foo", Rel "Bar"])
 
       runDatabase db sql
