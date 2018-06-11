@@ -88,7 +88,7 @@ spec = describe "SQL Mini Interpreter" $ do
 
     it "converts an insert statement" $ do
       toRelational (Insert "Foo" [ "Col1" ] [ [ "hello"] ])
-      `shouldBe` Add "Foo" (Relation [ "Col1" ] [["hello"]])
+      `shouldBe` Append "Foo" (Relation [ "Col1" ] [["hello"]])
 
     it "converts an create table statement" $ do
       toRelational (CreateTable "Foo" [ "Col1" ] )
@@ -163,8 +163,8 @@ spec = describe "SQL Mini Interpreter" $ do
       let db = populateMapDB []
           sql = do
             _ <- evaluateDB (Create "Foo" [ "Col1" ])
-            _ <- evaluateDB (Add "Foo" (Relation [ "Col1" ] [ [ "helli" ]]))
-            _ <- evaluateDB (Add "Foo" (Relation [ "Col1" ] [ [ "hello" ]]))
+            _ <- evaluateDB (Append "Foo" (Relation [ "Col1" ] [ [ "helli" ]]))
+            _ <- evaluateDB (Append "Foo" (Relation [ "Col1" ] [ [ "hello" ]]))
             evaluateDB (Rel "Foo")
 
       runDatabase db sql
@@ -174,8 +174,8 @@ spec = describe "SQL Mini Interpreter" $ do
       let db = populateMapDB []
           sql = do
             _ <- evaluateDB (Create "Foo" [ "Col1" ])
-            _ <- evaluateDB (Add "Foo" (Relation [ "Col1" ] [ [ "helli" ]]))
-            _ <- evaluateDB (Add "Foo" (Relation [ "Col2" ] [ [ "hello" ]]))
+            _ <- evaluateDB (Append "Foo" (Relation [ "Col1" ] [ [ "helli" ]]))
+            _ <- evaluateDB (Append "Foo" (Relation [ "Col2" ] [ [ "hello" ]]))
             evaluateDB (Rel "Foo")
 
       runDatabase db sql
@@ -186,8 +186,8 @@ spec = describe "SQL Mini Interpreter" $ do
           sql = do
             _ <- evaluateDB (Create "Foo" [ "Col1" ])
             _ <- evaluateDB (Create "Bar" [ "Col2" ])
-            _ <- evaluateDB (Add "Foo" (Relation [ "Col1" ] [ [ "hello" ]]))
-            _ <- evaluateDB (Add "Bar" (Relation [ "Col2" ] [ [ "helli" ]]))
+            _ <- evaluateDB (Append "Foo" (Relation [ "Col1" ] [ [ "hello" ]]))
+            _ <- evaluateDB (Append "Bar" (Relation [ "Col2" ] [ [ "helli" ]]))
             evaluateDB (Prod [ Rel "Foo", Rel "Bar"])
 
       runDatabase db sql
