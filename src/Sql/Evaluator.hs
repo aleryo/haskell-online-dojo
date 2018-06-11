@@ -13,7 +13,7 @@ import           Control.Monad.State
 import           Data.List            (elemIndex)
 import           Data.Maybe
 import           Data.Monoid
-import           Data.Text            hiding (foldr)
+import           Data.Text            hiding (concat, foldr)
 import           Prelude              hiding (lookup)
 import           Sql.DB
 import           Sql.Parser           (Expr (..), Sql (..))
@@ -55,16 +55,16 @@ evaluateDB :: (DB db) => Relational -> Database db Relation
 evaluateDB (Rel tblName) =
   get >>= maybe  (throwError $ tableNotFound tblName) pure . lookup tblName
 
-evaluateDB (Prod [expr1,expr2]) = do
-  relation1 <- evaluateDB expr1
-  relation2 <- evaluateDB expr2
-  return $ Relation (columnNames relation1 <> columnNames relation2) [ t1 <> t2 | t1 <- rows relation1, t2 <- rows relation2 ]
+evaluateDB (Prod []) = return $ Relation [] [[]]
 
-evaluateDB (Prod [expr1,expr2,expr3]) = do
-  relation1 <- evaluateDB expr1
-  relation2 <- evaluateDB expr2
-  relation3 <- evaluateDB expr3
-  return $ Relation (columnNames relation1 <> columnNames relation2 <> columnNames relation3) [ t1 <> t2 <> t3 | t1 <- rows relation1, t2 <- rows relation2, t3 <- rows relation3 ]
+evaluateDB (Prod [expr]) = do
+  relation <- evaluateDB expr
+  return $ Relation (columnNames relation) (rows relation)
+
+evaluateDB (Prod (expr:exprs)) = do
+  rel <- evaluateDB expr
+  (Relation namedColumns [actualRows]) <- evaluateDB (Prod exprs)
+  return $ Relation (columnNames rel <> namedColumns) [ relRows <> actualRows | relRows <- rows rel ]
 
 evaluateDB (Proj [col] expr) = do
   Relation cols rws <- evaluateDB expr
