@@ -13,7 +13,7 @@ import           Control.Monad.State
 import           Data.List            (elemIndex)
 import           Data.Maybe
 import           Data.Monoid
-import           Data.Text            hiding (concat, foldr)
+import           Data.Text
 import           Prelude              hiding (lookup)
 import           Sql.DB
 import           Sql.Parser           (Expr (..), Sql (..))
@@ -57,14 +57,11 @@ evaluateDB (Rel tblName) =
 
 evaluateDB (Prod []) = return $ Relation [] [[]]
 
-evaluateDB (Prod [expr]) = do
-  relation <- evaluateDB expr
-  return $ Relation (columnNames relation) (rows relation)
-
-evaluateDB (Prod (expr:exprs)) = do
-  rel <- evaluateDB expr
-  (Relation namedColumns [actualRows]) <- evaluateDB (Prod exprs)
-  return $ Relation (columnNames rel <> namedColumns) [ relRows <> actualRows | relRows <- rows rel ]
+evaluateDB (Prod exprs) =
+  foldM f (Relation [] [[]]) exprs
+    where
+      mergeRelations (Relation cs1 rs1) (Relation cs2 rs2) = Relation (cs1 <> cs2) [ t1 <> t2 | t1 <- rs1, t2 <- rs2 ]
+      f rel expr = mergeRelations rel <$> evaluateDB expr
 
 evaluateDB (Proj [col] expr) = do
   Relation cols rws <- evaluateDB expr
