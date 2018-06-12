@@ -97,7 +97,7 @@ spec = describe "SQL Mini Interpreter" $ do
   describe "Expression evaluation" $ do
 
     let relationabc = Relation [ "col1", "col2", "col3"] [["a", "b", "c"]]
-        relationdef = Relation [ "col4" ] [["d"], ["e"], ["f"]]
+        relationdef = Relation [ "col4" ] [["def"]]
         relationghc = Relation [ "col5" ] [["ghc (pun intended)"]]
 
     it "evaluates a relation" $ do
@@ -124,13 +124,13 @@ spec = describe "SQL Mini Interpreter" $ do
 
     it "evaluates cartesian product of 3 relations" $ do
       let db = populateMapDB [ ("Foo", relationabc)
-                        , ( "Bar", relationdef)
-                        , ("Baz", relationghc)
-                        ]
+                             , ("Bar", relationdef)
+                             , ("Baz", relationghc) ]
+
       evaluate (Prod [ Rel "Foo", Rel "Bar", Rel "Baz"]) db
         `shouldBe` Right (Relation [ "col1", "col2", "col3", "col4", "col5" ]
                            [row1 <> row2 <> row3 | row1 <- [["a", "b", "c"]]
-                                                 , row2 <- [["d"], ["e"], ["f"]]
+                                                 , row2 <- [["def"]]
                                                  , row3 <- [["ghc (pun intended)"]]])
 
     it "returns error when evaluating cartesian product given one relation does not exist" $ do
