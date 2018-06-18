@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
@@ -64,17 +65,16 @@ evaluateDB (Prod exprs) =
 
 evaluateDB (Proj selected expr) = do
   Relation cols rws <- evaluateDB expr
-  projection <- projectCols selected cols
+  projection <- projectCols selected (Prelude.reverse cols)
   pure $ Relation selected (fmap projection rws)
   where
     projectCols :: [ ColumnName ] -> [ ColumnName ] -> Database db ([Text] -> [Text])
-    projectCols (col:selectedCols) cols =
-      case col `elemIndex` cols of
-        Just colNum ->  do
-          f <- projectCols selectedCols cols
-          pure $ \ row -> row !! colNum : f row
-        Nothing      -> throwError $ columnNotFound col
-    projectCols []  _ = pure $ const []
+    projectCols selectedCols cols = foldM project (const []) selectedCols
+      where
+        project f col =
+          case col `elemIndex` cols of
+            Just colNum -> pure $ \ row -> row !! colNum : f row
+            Nothing     -> throwError $ columnNotFound col
 
 evaluateDB (Create tbl cols)  = do
   let rel = Relation cols []

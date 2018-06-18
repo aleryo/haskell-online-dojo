@@ -31,6 +31,7 @@ import           Test.Hspec
 --       -> [X] error handling
 -- * Improvements:
 --   * Rename DB -> Tables
+--   * Better type name for Rows
 
 spec :: Spec
 spec = describe "SQL Mini Interpreter" $ do
