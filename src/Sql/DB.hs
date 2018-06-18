@@ -15,13 +15,15 @@ data Relation = Relation { columnNames :: [ColumnName]
                 deriving (Eq, Show)
 
 
+type Table =  (TableName, Relation)
+
 class DB db where
   initDB :: db
   lookup :: TableName             -> db -> Maybe Relation
   insert :: TableName -> Relation -> db -> db
 
-populate :: (DB db) => [ (TableName, Relation) ] -> db
-populate = foldr (\ (tbl,rel) db -> insert tbl rel db) initDB
+  populate :: [ Table ] -> db
+  populate = foldr (\ (tbl,rel) db -> insert tbl rel db) initDB
 
 
 -- * Persistence

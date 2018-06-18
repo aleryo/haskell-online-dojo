@@ -5,7 +5,7 @@
 {-# LANGUAGE TupleSections              #-}
 {-# LANGUAGE TypeSynonymInstances       #-}
 module Sql.Evaluator
-  ( evaluate, DB(..), populate, evaluateDB, execDatabase, runDatabase, toRelational
+  ( evaluate, DB(..), evaluateDB, execDatabase, runDatabase, toRelational
   , Relational(..), Relation(..)
   ) where
 
