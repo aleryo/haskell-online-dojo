@@ -65,10 +65,10 @@ evaluateDB (Prod exprs) =
 
 evaluateDB (Proj selected expr) = do
   Relation cols rws <- evaluateDB expr
-  projection <- projectCols selected (Prelude.reverse cols)
+  projection <- projectCols (Prelude.reverse selected) cols
   pure $ Relation selected (fmap projection rws)
   where
-    projectCols :: [ ColumnName ] -> [ ColumnName ] -> Database db ([Text] -> [Text])
+    projectCols :: [ ColumnName ] -> [ ColumnName ] -> Database db (Row -> Row)
     projectCols selectedCols cols = foldM project (const []) selectedCols
       where
         project f col =
