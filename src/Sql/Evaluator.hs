@@ -55,21 +55,26 @@ evaluateDB :: (DB db) => Relational -> Database db Relation
 evaluateDB (Rel tblName) =
   get >>= maybe  (throwError $ tableNotFound tblName) pure . lookup tblName
 
-evaluateDB (Prod []) = return $ Relation [] [[]]
-
 evaluateDB (Prod exprs) =
-  foldM f (Relation [] [[]]) exprs
+  foldM cartesianProduct (Relation [] [[]]) exprs
     where
-      mergeRelations (Relation cs1 rs1) (Relation cs2 rs2) = Relation (cs1 <> cs2) [ t1 <> t2 | t1 <- rs1, t2 <- rs2 ]
-      f rel expr = mergeRelations rel <$> evaluateDB expr
+      mergeRelations (Relation cs1 rs1) (Relation cs2 rs2) =
+        Relation (cs1 <> cs2) [ t1 <> t2 | t1 <- rs1, t2 <- rs2 ]
+      cartesianProduct rel expr = mergeRelations rel <$> evaluateDB expr
 
-evaluateDB (Proj [col] expr) = do
+evaluateDB (Proj selected expr) = do
   Relation cols rws <- evaluateDB expr
-  case elemIndex col cols of
-    Just colNum ->
-      let projectCols row = [ row !! colNum ]
-      in  pure $ Relation [ col ] (fmap projectCols rws)
-    Nothing -> throwError $ columnNotFound col
+  projection <- projectCols selected cols
+  pure $ Relation selected (fmap projection rws)
+  where
+    projectCols :: [ ColumnName ] -> [ ColumnName ] -> Database db ([Text] -> [Text])
+    projectCols (col:selectedCols) cols =
+      case col `elemIndex` cols of
+        Just colNum ->  do
+          f <- projectCols selectedCols cols
+          pure $ \ row -> row !! colNum : f row
+        Nothing      -> throwError $ columnNotFound col
+    projectCols []  _ = pure $ const []
 
 evaluateDB (Create tbl cols)  = do
   let rel = Relation cols []
@@ -86,7 +91,6 @@ evaluateDB (Append tbl rel)  = do
       else throwError "Incompatible relation schemas"
   return rel
 
-evaluateDB expr  = throwError $ "Don't know how to evaluate " <> pack (show expr)
 
 toRelational :: Sql -> Relational
 toRelational (Select projs tableNames) =
