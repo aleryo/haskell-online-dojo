@@ -60,17 +60,17 @@ spec = describe "SQL Mini Interpreter" $ do
   describe "SQL Parser"$ do
 
     it "interprets 'SELECT 42' as an SqlStatement" $ do
-      interpret "SELECT 42" `shouldBe` SqlStatement (Select [ Number 42 ] [])
+      interpret "SELECT 42" `shouldBe` SqlStatement (Select [ Number 42 ] [] Nothing)
 
     it "interprets 'SELECT 1' as an SqlStatement" $ do
-      interpret "SELECT 1" `shouldBe` SqlStatement (Select [ Number 1 ] [])
+      interpret "SELECT 1" `shouldBe` SqlStatement (Select [ Number 1 ] [] Nothing)
 
     it "interprets 'SELECT Foo, Bar' as a SqlStatement" $ do
-      interpret "SELECT Foo,Bar" `shouldBe` SqlStatement (Select [ Col "Foo", Col "Bar"] [])
+      interpret "SELECT Foo,Bar" `shouldBe` SqlStatement (Select [ Col "Foo", Col "Bar"] [] Nothing)
 
     it "interprets 'SELECT Foo, Bar FROM baz' as a SqlStatement" $ do
       interpret "SELECT Foo  , Bar FROM baz"
-        `shouldBe` SqlStatement (Select [ Col "Foo", Col "Bar"] ["baz"] )
+        `shouldBe` SqlStatement (Select [ Col "Foo", Col "Bar"] ["baz"] Nothing)
 
     it "interprets unknown string  as Unknown command" $ do
       interpret "foo" `shouldBe` Unknown "(line 1, column 1):\nunexpected \"f\"\nexpecting \"SELECT\", \"INSERT\" or \"CREATE\""
@@ -85,15 +85,15 @@ spec = describe "SQL Mini Interpreter" $ do
 
     it "interpret WHERE clauses a SqlStatement" $ do
       interpret "SELECT Foo FROM Bar WHERE Foo = 12"
-        `shouldBe` SqlStatement (Select [ Col "Foo" ] [ "Bar" ] (Equal (Col "Foo") (Number 12)))
+        `shouldBe` SqlStatement (Select [ Col "Foo" ] [ "Bar" ] (Just (Equal (Col "Foo") (Number 12))))
 
   describe "SQL To Relational" $ do
     it "converts a simple Select statement" $ do
-      toRelational (Select [ Col "Foo", Col "Bar"] ["baz"] )
+      toRelational (Select [ Col "Foo", Col "Bar"] ["baz"] Nothing )
         `shouldBe` Proj  [ "Foo", "Bar"] (Rel "baz")
 
     it "converts a select statement with multiple from" $ do
-      toRelational (Select [ Col "Foo", Col "Bar"] ["baz", "qix"] )
+      toRelational (Select [ Col "Foo", Col "Bar"] ["baz", "qix"] Nothing)
         `shouldBe` Proj [ "Foo", "Bar"] (Prod [ Rel "baz", Rel "qix"])
 
     it "converts an insert statement" $ do
