@@ -5,7 +5,7 @@
 {-# LANGUAGE TupleSections              #-}
 {-# LANGUAGE TypeSynonymInstances       #-}
 module Sql.Evaluator
-  ( evaluate, DB(..), evaluateDB, execDatabase, runDatabase, toRelational
+  ( evaluate, Tables(..), evaluateDB, execDatabase, runDatabase, toRelational
   , Relational(..), Relation(..)
   ) where
 
@@ -43,16 +43,16 @@ newtype Database db a = Database { tables :: ExceptT EvaluationError (State db) 
            , MonadError EvaluationError
            )
 
-evaluate :: (DB db) => Relational -> db -> Either EvaluationError Relation
+evaluate :: (Tables db) => Relational -> db -> Either EvaluationError Relation
 evaluate rel db = runDatabase db $ evaluateDB rel
 
-execDatabase :: (DB db) => db -> Database db a -> (Either EvaluationError a, db)
+execDatabase :: (Tables db) => db -> Database db a -> (Either EvaluationError a, db)
 execDatabase db = flip runState db . runExceptT . tables
 
-runDatabase :: (DB db) => db -> Database db a -> Either EvaluationError a
+runDatabase :: (Tables db) => db -> Database db a -> Either EvaluationError a
 runDatabase db = flip evalState db . runExceptT . tables
 
-evaluateDB :: (DB db) => Relational -> Database db Relation
+evaluateDB :: (Tables db) => Relational -> Database db Relation
 evaluateDB (Rel tblName) =
   get >>= maybe  (throwError $ tableNotFound tblName) pure . lookup tblName
 
@@ -65,11 +65,11 @@ evaluateDB (Prod exprs) =
 
 evaluateDB (Proj selected expr) = do
   Relation cols rws <- evaluateDB expr
-  projection <- projectCols (Prelude.reverse selected) cols
+  projection <- projectCols cols (Prelude.reverse selected)
   pure $ Relation selected (fmap projection rws)
   where
     projectCols :: [ ColumnName ] -> [ ColumnName ] -> Database db (Row -> Row)
-    projectCols selectedCols cols = foldM project (const []) selectedCols
+    projectCols cols selectedCols = foldM project (const []) selectedCols
       where
         project f col =
           case col `elemIndex` cols of

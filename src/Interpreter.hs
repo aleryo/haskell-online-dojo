@@ -1,8 +1,8 @@
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE NamedFieldPuns      #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Interpreter
     ( -- * Top-level CLI
@@ -32,7 +32,7 @@ interpret s = case parseSQL s of
                 Left err  -> Unknown err
                 Right sql -> SqlStatement sql
 
-runCommand :: (DB db) => Text -> State db (Maybe Text)
+runCommand :: (Tables db) => Text -> State db (Maybe Text)
 runCommand line = do
   db <- get
   let output = interpret line
@@ -43,7 +43,7 @@ runCommand line = do
        Unknown err     -> return $ Just $ "unknown command:" <> err
        Exit            -> return $ Nothing
 
-console' :: (DB db, Persistable db io, MonadIO io) => db -> io ()
+console' :: (Tables tables, Persistable tables io, MonadIO io) => tables -> io ()
 console' db = do
   liftIO $ putStr "> "
   line <- pack <$> liftIO getLine

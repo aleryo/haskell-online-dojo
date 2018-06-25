@@ -23,7 +23,7 @@ import           Test.Hspec
 --       -> efficient way : Btree structure
 -- * Bugs:
 --   * [X] handle only 2 tables in product
---   * [ ] handle only 1 column in projection
+--   * [X] handle only 1 column in projection
 --   * nsert overwrites previous values
 --       -> [X] separate create from insert (new command)
 --       -> [X] improve insert to lookup existing table

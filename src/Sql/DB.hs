@@ -17,16 +17,16 @@ data Relation = Relation { columnNames :: [ColumnName]
 
 type Table =  (TableName, Relation)
 
-class DB db where
-  initDB :: db
-  lookup :: TableName             -> db -> Maybe Relation
-  insert :: TableName -> Relation -> db -> db
+class Tables tables where
+  initDB :: tables
+  lookup :: TableName             -> tables -> Maybe Relation
+  insert :: TableName -> Relation -> tables -> tables
 
-  populate :: [ Table ] -> db
-  populate = foldr (\ (tbl,rel) db -> insert tbl rel db) initDB
+  populate :: [ Table ] -> tables
+  populate = foldr (\ (tbl,rel) tables -> insert tbl rel tables) initDB
 
 
 -- * Persistence
-class (DB db, Monad m) => Persistable db m where
-  saveDB :: db -> m ()
-  loadDB :: m db
+class (Tables tables, Monad m) => Persistable tables m where
+  saveDB :: tables -> m ()
+  loadDB :: m tables

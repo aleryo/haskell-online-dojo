@@ -34,7 +34,7 @@ instance Serialize Relation  where
     rws <- fmap (fmap decodeUtf8) <$> get
     pure $ Relation cols rws
 
-instance DB BytesDB where
+instance Tables BytesDB where
   initDB                       = BytesDB mempty
   insert tableName relation (BytesDB db) =
     BytesDB $ runPut (put tableName  >> put relation) <> db

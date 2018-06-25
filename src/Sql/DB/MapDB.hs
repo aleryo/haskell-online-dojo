@@ -10,7 +10,7 @@ import           Sql.DB
 
 type MapDB = Map.Map TableName Relation
 
-instance DB MapDB where
+instance Tables MapDB where
   lookup = Map.lookup
   insert = Map.insert
   initDB = Map.empty
