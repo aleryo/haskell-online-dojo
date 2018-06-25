@@ -18,12 +18,12 @@ data Relation = Relation { columnNames :: [ColumnName]
 type Table =  (TableName, Relation)
 
 class Tables tables where
-  initDB :: tables
+  emptyTables :: tables
   lookup :: TableName             -> tables -> Maybe Relation
   insert :: TableName -> Relation -> tables -> tables
 
   populate :: [ Table ] -> tables
-  populate = foldr (\ (tbl,rel) tables -> insert tbl rel tables) initDB
+  populate = foldr (\ (tbl,rel) tables -> insert tbl rel tables) emptyTables
 
 
 -- * Persistence

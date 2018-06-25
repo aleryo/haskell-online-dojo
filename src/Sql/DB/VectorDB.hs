@@ -35,7 +35,7 @@ instance Serialize Relation  where
     pure $ Relation cols rws
 
 instance Tables BytesDB where
-  initDB                       = BytesDB mempty
+  emptyTables                       = BytesDB mempty
   insert tableName relation (BytesDB db) =
     BytesDB $ runPut (put tableName  >> put relation) <> db
   lookup tableName (BytesDB db)    =

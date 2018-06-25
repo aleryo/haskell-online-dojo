@@ -30,7 +30,7 @@ import           Test.Hspec
 --   * fromJust when projecting -> unknown column name?
 --       -> [X] error handling
 -- * Improvements:
---   * Rename DB -> Tables
+--   * [X] Rename DB -> Tables
 --   * Better type name for Rows
 
 spec :: Spec

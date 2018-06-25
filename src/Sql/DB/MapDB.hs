@@ -13,4 +13,4 @@ type MapDB = Map.Map TableName Relation
 instance Tables MapDB where
   lookup = Map.lookup
   insert = Map.insert
-  initDB = Map.empty
+  emptyTables = Map.empty

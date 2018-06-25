@@ -16,7 +16,7 @@ spec :: Spec
 spec = describe "Binary Representation of DB" $ do
 
   it "initialise empty vector" $ do
-    bytes initDB `shouldBe` mempty
+    bytes emptyTables `shouldBe` mempty
 
   it "can seriaze relations" $ withMaxSuccess 30 $ property $ prop_canRoundtripRelationSerialization
   it "can lookup inserted relations" $ withMaxSuccess 30 $ property $ prop_canLookupInsertedRelations
@@ -32,13 +32,13 @@ prop_canLookupInsertedRelations rels =
   let
     tables = zip mkTableNames rels
     insert' (TblName n, r) db = insert n r db
-    finalDB = foldr insert' (initDB :: BytesDB) tables
+    finalDB = foldr insert' (emptyTables :: BytesDB) tables
   in
     all ( \(TblName tname, rel) -> DB.lookup tname finalDB == Just rel) tables
 
 prop_canStoreAndLoadAVectorDB :: Relation -> Property
 prop_canStoreAndLoadAVectorDB rel = monadicIO $ do
-  let vectorDB = insert "table-1" rel (initDB :: BytesDB)
+  let vectorDB = insert "table-1" rel (emptyTables :: BytesDB)
   db <- run $ do
     saveDB vectorDB
     loadDB
