@@ -13,9 +13,9 @@ build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
 
-extensions:
-           - MultiParamTypeClasses
-           - OverloadedStrings
+default-extensions:
+ - MultiParamTypeClasses
+ - OverloadedStrings
 
 library
   hs-source-dirs:      src

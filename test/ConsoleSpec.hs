@@ -15,16 +15,21 @@ import           Test.Hspec
 --   * serialize to/from binary: relatively simple, define a binary form then RW
 --       -> [x] serialize/deserialize binary to file
 --       -> map binary DB to file (e.g. mmap)
+--   * introduce a FS-like structure in storage
+--       -> direct access to each table
+--       -> add indices
 --   * store modification journal
 --       -> expose modification operations as independent "DSL"
 --       -> keep db log/ reload from log (event store) -> transaction
 --   * operate DB ops on a "more efficient" representation (e.g. BTree)
 --       -> [x] naive way: an array of binary data
---       -> efficient way : Btree structure
+--       -> efficient way
+-- * extend SQL:
+--    * support WHERE
 -- * Bugs:
 --   * [X] handle only 2 tables in product
 --   * [X] handle only 1 column in projection
---   * nsert overwrites previous values
+--   * Insert overwrites previous values
 --       -> [X] separate create from insert (new command)
 --       -> [X] improve insert to lookup existing table
 --   * fromJust when projecting -> unknown column name?
@@ -76,7 +81,11 @@ spec = describe "SQL Mini Interpreter" $ do
 
     it "interprets CREATE TABLE  Foo (Col1) as a SqlStatement" $ do
       interpret "CREATE TABLE Foo (Col1)"
-         `shouldBe` SqlStatement (CreateTable "Foo" [ "Col1" ])
+        `shouldBe` SqlStatement (CreateTable "Foo" [ "Col1" ])
+
+    it "interpret WHERE clauses a SqlStatement" $ do
+      interpret "SELECT Foo FROM Bar WHERE Foo = 12"
+        `shouldBe` SqlStatement (Select [ Col "Foo" ] [ "Bar" ] (Equal (Col "Foo") (Number 12)))
 
   describe "SQL To Relational" $ do
     it "converts a simple Select statement" $ do

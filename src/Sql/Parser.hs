@@ -12,6 +12,7 @@ import           Text.Parsec            hiding (State, label)
 data Expr = Number Int
           | Col Text
           | Str Text
+          | Equal Expr Expr
   deriving (Eq, Show)
 
 instance IsString Expr where
@@ -100,6 +101,7 @@ expression :: Parser Expr
 expression =  (Number <$> integer)
           <|> (Col <$> columnName)
           <|> (Str <$> stringLiteral)
+          <|> (Equal <$> expression <*> expression)
 
 stringLiteral :: Parser Text
 stringLiteral = betweenQuotes label
