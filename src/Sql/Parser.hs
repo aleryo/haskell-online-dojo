@@ -96,10 +96,10 @@ whereClause :: Parser Expr
 whereClause = do
   string_ "WHERE"
   spaces
-  right <- columnName
+  right <- expression
   spaces >> char '=' >> spaces
-  left <- integer
-  return $ Equal (Col right) (Number left)
+  left <- expression
+  return $ Equal right left
 
 expressionList :: Parser [Expr]
 expressionList = expression `sepBy1` comma
