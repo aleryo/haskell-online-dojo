@@ -57,3 +57,4 @@ stream :: Relational -> DB -> [ DBOps ]
 * [Session 17](): Pas d'enregistrement
 * [Session 18](): Pas d'enregistrement
 * [Session 19](https://www.youtube.com/watch?v=VsGloglMbZs&t=156s)
+* [Session 20](https://youtu.be/GJ-8DGOQpDw?list=PLkuqGsFNy4yvo_EjXc_aG5OAoKVcrYlCE)
