@@ -17,15 +17,7 @@ import           Data.Monoid
 import           Data.Text
 import           Prelude              hiding (lookup)
 import           Sql.DB
-import           Sql.Parser           (Expr (..), Sql (..))
-
-data Relational = Rel TableName
-                | Proj [ ColumnName ] Relational
-                | Prod [ Relational ]
-                | Create TableName [ ColumnName ]
-                | Append TableName Relation
-  deriving (Eq, Show)
-
+import           Sql.Relational
 
 type EvaluationError = Text
 
@@ -90,20 +82,3 @@ evaluateDB (Append tbl rel)  = do
       then put (insert tbl (Relation (columnNames rel) (rows rel' <> rows rel)) db)
       else throwError "Incompatible relation schemas"
   return rel
-
-
-toRelational :: Sql -> Relational
-toRelational (Select projs tableNames) =
-   Proj proj (relations tableNames)
-   where
-     proj = [ x | Col x <- projs ]
-     relations [ t ] = Rel t
-     relations ts    = Prod $ fmap Rel ts
-toRelational (Insert tableName cols values) =
-   Append tableName (Relation cols (fmap (fmap eval) values))
-toRelational (CreateTable tableName cols) =
-   Create tableName cols
-
-eval :: Expr -> Text
-eval (Str s) = s
-eval expr    = error $ "cannot eval " <> show expr

@@ -1,7 +1,6 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TupleSections              #-}
-module Sql.Parser (Sql(..), Expr(..), parseSQL) where
+module Sql.Parser (Sql(..), Expr(..), parseSQL, whereClause) where
 
 import           Control.Monad.Identity
 import           Data.Maybe
@@ -22,7 +21,7 @@ type TableName = Text
 
 type ColumnName = Text
 
-data Sql = Select [ Expr ] [ TableName ]
+data Sql = Select [ Expr ] [ TableName ] (Maybe Expr)
          | Insert TableName [ ColumnName ] [ [ Expr ] ]
          | CreateTable TableName [ ColumnName ]
   deriving (Eq, Show)
@@ -51,7 +50,9 @@ selectClause = do
   exprs <- expressionList
   spaces
   tables <- optionMaybe fromClause
-  return (Select exprs $ fromMaybe [] tables)
+  spaces
+  selections <- optionMaybe whereClause
+  return $ Select exprs (fromMaybe [] tables) selections
 
 insertClause :: Parser Sql
 insertClause = do
@@ -90,6 +91,15 @@ fromClause = do
   string_ "FROM"
   spaces
   tableList
+
+whereClause :: Parser Expr
+whereClause = do
+  string_ "WHERE"
+  spaces
+  right <- expression
+  spaces >> char '=' >> spaces
+  left <- expression
+  return $ Equal right left
 
 expressionList :: Parser [Expr]
 expressionList = expression `sepBy1` comma
