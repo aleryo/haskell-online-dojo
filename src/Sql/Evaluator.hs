@@ -6,6 +6,7 @@
 {-# LANGUAGE TypeSynonymInstances       #-}
 module Sql.Evaluator
   ( evaluate, Tables(..), evaluateDB, execDatabase, runDatabase, toRelational
+  , eval
   , Relational(..), Relation(..)
   ) where
 
@@ -17,6 +18,7 @@ import           Data.Monoid
 import           Data.Text
 import           Prelude              hiding (lookup)
 import           Sql.DB
+import           Sql.Parser           (Expr (..))
 import           Sql.Relational
 
 type EvaluationError = Text
@@ -55,8 +57,8 @@ evaluateDB (Prod exprs) =
         Relation (cs1 <> cs2) [ t1 <> t2 | t1 <- rs1, t2 <- rs2 ]
       cartesianProduct rel expr = mergeRelations rel <$> evaluateDB expr
 
-evaluateDB (Proj selected expr) = do
-  Relation cols rws <- evaluateDB expr
+evaluateDB (Proj selected rel) = do
+  Relation cols rws <- evaluateDB rel
   projection <- projectCols cols (Prelude.reverse selected)
   pure $ Relation selected (fmap projection rws)
   where
@@ -67,6 +69,10 @@ evaluateDB (Proj selected expr) = do
           case col `elemIndex` cols of
             Just colNum -> pure $ \ row -> row !! colNum : f row
             Nothing     -> throwError $ columnNotFound col
+
+evaluateDB (Sel expr rel) = do
+  Relation cols rws <- evaluateDB rel
+  pure $ Relation cols (Prelude.filter (eval expr cols) rws)
 
 evaluateDB (Create tbl cols)  = do
   let rel = Relation cols []
@@ -83,4 +89,11 @@ evaluateDB (Append tbl rel)  = do
       else throwError "Incompatible relation schemas"
   return rel
 
-evaluateDB Sel{} = undefined
+eval :: Expr -> [ColumnName] -> Row -> Bool
+eval (Equal c'@(Col _c) e'@(Str _s)) col row = eval (Equal e' c') col row
+eval (Equal (Str s) (Col col)) cols vals       =
+          case col `elemIndex` cols of
+            Just colNum -> vals !! colNum  == s
+            Nothing     -> undefined
+eval _ _ _                                   = undefined
+

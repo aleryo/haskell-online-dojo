@@ -108,11 +108,19 @@ spec = describe "SQL Mini Interpreter" $ do
       toRelational (CreateTable "Foo" [ "Col1" ] )
       `shouldBe` Create "Foo" [ "Col1" ]
 
-  describe "Expression evaluation" $ do
+  describe "Select Expression Evaluation" $ do
+
+    it "evaluates equality predicate over string when column exists" $ do
+      eval (Equal (Str "a") (Col "col")) [ "col" ] ["a"] `shouldBe` True
+      eval (Equal (Col "col") (Str "a")) [ "col" ] ["a"] `shouldBe` True
+      eval (Equal (Str "a") (Col "col")) [ "col1", "col" ] ["b", "a"] `shouldBe` True
+
+  describe "Relational expression evaluation" $ do
 
     let relationabc = Relation [ "col1", "col2", "col3"] [["a", "b", "c"]]
         relationdef = Relation [ "col4" ] [["def"]]
         relationghc = Relation [ "col5" ] [["ghc (pun intended)"]]
+        relationabcs = Relation [ "col1", "col2", "col3"] [["a", "b", "c"], ["d", "e", "f"]]
 
     it "evaluates a relation" $ do
       let  db = populateMapDB [ ( "Foo", relationabc) ]
@@ -161,6 +169,13 @@ spec = describe "SQL Mini Interpreter" $ do
       let  db = populateMapDB [ ( "Foo", relationabc) ]
       evaluate (Proj [ "col1", "col2"] (Rel "Foo")) db
         `shouldBe` Right (Relation [ "col1", "col2" ] [["a", "b"]])
+
+    it "select rows columns when evaluating select/where clause" $ do
+      let  db = populateMapDB [ ( "Foo", relationabcs) ]
+      evaluate (Sel (Equal (Col "col1") (Str "d")) (Rel "Foo")) db
+        `shouldBe` Right (Relation [ "col1", "col2", "col3" ] [["d", "e", "f"]])
+      evaluate (Sel (Equal (Col "col1") (Str "a")) (Rel "Foo")) db
+        `shouldBe` Right (Relation [ "col1", "col2", "col3" ] [["a", "b", "c"]])
 
     it "returns error when filtering columns on SELECT given column does not exist" $ do
       let  db = populateMapDB [ ( "Foo", relationabc) ]
