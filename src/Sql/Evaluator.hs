@@ -82,3 +82,5 @@ evaluateDB (Append tbl rel)  = do
       then put (insert tbl (Relation (columnNames rel) (rows rel' <> rows rel)) db)
       else throwError "Incompatible relation schemas"
   return rel
+
+evaluateDB Sel{} = undefined

@@ -92,6 +92,10 @@ spec = describe "SQL Mini Interpreter" $ do
       toRelational (Select [ Col "Foo", Col "Bar"] ["baz"] Nothing )
         `shouldBe` Proj  [ "Foo", "Bar"] (Rel "baz")
 
+    it "converts a simple Select statement with where clause" $ do
+      toRelational (Select [ Col "Foo", Col "Bar"] ["baz"] (Just (Equal (Col "Foo") (Number 12))) )
+        `shouldBe` Proj  [ "Foo", "Bar"] (Sel (Equal (Col "Foo") (Number 12)) (Rel "baz"))
+
     it "converts a select statement with multiple from" $ do
       toRelational (Select [ Col "Foo", Col "Bar"] ["baz", "qix"] Nothing)
         `shouldBe` Proj [ "Foo", "Bar"] (Prod [ Rel "baz", Rel "qix"])

@@ -3,26 +3,28 @@ module Sql.Relational(
     Relational(..)
 ) where
 
-import Data.Monoid
-import Data.Text
-import Sql.Parser
-import Sql.DB
+import           Data.Monoid
+import           Data.Text
+import           Sql.DB
+import           Sql.Parser
 
 data Relational = Rel TableName
                 | Proj [ ColumnName ] Relational
                 | Prod [ Relational ]
+                | Sel Expr Relational
                 | Create TableName [ ColumnName ]
                 | Append TableName Relation
   deriving (Eq, Show)
 
 toRelational :: Sql -> Relational
-toRelational (Select projs tableNames Nothing) =
-    Proj proj (relations tableNames)
+toRelational (Select projs tableNames selection) =
+    case selection of
+        Nothing   -> Proj proj (relations tableNames)
+        Just expr -> Proj proj (Sel expr (relations tableNames))
     where
         proj = [ x | Col x <- projs ]
         relations [ t ] = Rel t
         relations ts    = Prod $ fmap Rel ts
-toRelational Select{} = undefined
 
 toRelational (Insert tableName cols values) =
     Append tableName (Relation cols (fmap (fmap eval) values))
