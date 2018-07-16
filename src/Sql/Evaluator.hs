@@ -97,7 +97,7 @@ evaluateDB (Append tbl rel) = do
         else throwError "Incompatible relation schemas"
   return rel
 
-eval :: (Tables db) => Expr -> [ColumnName] -> Row -> Database db Bool
+eval :: MonadError EvaluationError m => Expr -> [Text] -> [Text] -> m Bool
 eval (Equal c'@(Col _c) e'@(Str _s)) col row = eval (Equal e' c') col row
 eval (Equal (Str s) (Col col)) cols vals =
   case col `elemIndex` cols of
