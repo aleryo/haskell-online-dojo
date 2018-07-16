@@ -9,6 +9,7 @@ import           Interpreter
 import           Sql
 import           Sql.DB.MapDB
 import           Test.Hspec
+import           Test.QuickCheck
 
 -- TODO
 -- * durability of DB:
@@ -101,15 +102,18 @@ spec =
         toRelational (CreateTable "Foo" ["Col1"]) `shouldBe`
         Create "Foo" ["Col1"]
     describe "Select Expression Evaluation" $ do
-      let eval' e c r = runDatabase (emptyTables :: MapDB) $ eval e c r
       it "evaluates equality predicate over string when column exists" $ do
-        eval' (Equal (Str "a") (Col "col")) ["col"] ["a"] `shouldBe` Right True
-        eval' (Equal (Col "col") (Str "a")) ["col"] ["a"] `shouldBe` Right True
-        eval' (Equal (Str "a") (Col "col")) ["col1", "col"] ["b", "a"] `shouldBe`
+        evalExpr (Equal (Str "a") (Col "col")) ["col"] ["a"] `shouldBe`
+          Right True
+        evalExpr (Equal (Col "col") (Str "a")) ["col"] ["a"] `shouldBe`
+          Right True
+        evalExpr (Equal (Str "a") (Col "col")) ["col1", "col"] ["b", "a"] `shouldBe`
           Right True
       it "raises an error when a column in predicate does not exist" $
-        eval' (Equal (Str "a") (Col "col2")) ["col1", "col"] ["b", "a"] `shouldBe`
+        evalExpr (Equal (Str "a") (Col "col2")) ["col1", "col"] ["b", "a"] `shouldBe`
         Left "no column with name \"col2\""
+      it "raises an error when expression is malformed" $
+        property malformedExpressionRaisesError
     describe "Relational expression evaluation" $ do
       let relationabc = Relation ["col1", "col2", "col3"] [["a", "b", "c"]]
           relationdef = Relation ["col4"] [["def"]]
@@ -199,3 +203,16 @@ spec =
               evaluateDB (Prod [Rel "Foo", Rel "Bar"])
         runDatabase db sql `shouldBe`
           Right (Relation ["Col1", "Col2"] [["hello", "helli"]])
+
+evalExpr e c r = runDatabase (emptyTables :: MapDB) $ eval e c r
+
+malformedExpressionRaisesError :: NonBooleanExpression -> Bool
+malformedExpressionRaisesError (NonBooleanExpression expr) =
+  evalExpr expr [] [] == Left "Expression is not a boolean expression"
+
+newtype NonBooleanExpression =
+  NonBooleanExpression Expr
+  deriving (Eq, Show)
+
+instance Arbitrary NonBooleanExpression where
+  arbitrary = undefined
