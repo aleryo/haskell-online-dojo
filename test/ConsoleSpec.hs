@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 module ConsoleSpec where
 
 import           Control.Monad.State
@@ -8,7 +9,6 @@ import           Interpreter
 import           Sql
 import           Sql.DB.MapDB
 import           Test.Hspec
-
 
 -- TODO
 -- * durability of DB:
@@ -25,7 +25,7 @@ import           Test.Hspec
 --       -> [x] naive way: an array of binary data
 --       -> efficient way
 -- * extend SQL:
---    * support WHERE
+--    * [X] support WHERE
 -- * Bugs:
 --   * [X] handle only 2 tables in product
 --   * [X] handle only 1 column in projection
@@ -37,187 +37,161 @@ import           Test.Hspec
 -- * Improvements:
 --   * [X] Rename DB -> Tables
 --   * Better type name for Rows
-
 spec :: Spec
-spec = describe "SQL Mini Interpreter" $ do
-
-  let
-    populateMapDB rels = populate rels :: MapDB
-
-  it "interprets '.exit' as Exit command" $ do
-    interpret ".exit" `shouldBe` Exit
-
-  it "interprets SQL commands" $ do
-    let output = do
-          _ <- runCommand "CREATE TABLE Foo (Col1)"
-          _ <- runCommand "INSERT INTO Foo (Col1) VALUES ('helli')"
-          _ <- runCommand "INSERT INTO Foo (Col1) VALUES ('hello')"
-          runCommand "SELECT Col1 FROM Foo"
-
-    evalState output (populateMapDB [])
-      `shouldBe` Just (pack $ show $ (Right (Relation ["Col1"] [["helli"], ["hello"]]) :: Either Text Relation))
-
-  describe "SQL Parser"$ do
-
-    it "interprets 'SELECT 42' as an SqlStatement" $ do
-      interpret "SELECT 42" `shouldBe` SqlStatement (Select [ Number 42 ] [] Nothing)
-
-    it "interprets 'SELECT 1' as an SqlStatement" $ do
-      interpret "SELECT 1" `shouldBe` SqlStatement (Select [ Number 1 ] [] Nothing)
-
-    it "interprets 'SELECT Foo, Bar' as a SqlStatement" $ do
-      interpret "SELECT Foo,Bar" `shouldBe` SqlStatement (Select [ Col "Foo", Col "Bar"] [] Nothing)
-
-    it "interprets 'SELECT Foo, Bar FROM baz' as a SqlStatement" $ do
-      interpret "SELECT Foo  , Bar FROM baz"
-        `shouldBe` SqlStatement (Select [ Col "Foo", Col "Bar"] ["baz"] Nothing)
-
-    it "interprets unknown string  as Unknown command" $ do
-      interpret "foo" `shouldBe` Unknown "(line 1, column 1):\nunexpected \"f\"\nexpecting \"SELECT\", \"INSERT\" or \"CREATE\""
-
-    it "interprets INSERT INTO Foo (Col1) VALUES ('hello') as a SqlStatement" $ do
-      interpret "INSERT INTO Foo (Col1) VALUES ('hello')"
-         `shouldBe` SqlStatement (Insert "Foo" [ "Col1" ] [ [ "hello" ] ])
-
-    it "interprets CREATE TABLE  Foo (Col1) as a SqlStatement" $ do
-      interpret "CREATE TABLE Foo (Col1)"
-        `shouldBe` SqlStatement (CreateTable "Foo" [ "Col1" ])
-
-    it "interpret WHERE clauses a SqlStatement" $ do
-      interpret "SELECT Foo FROM Bar WHERE Foo = 12"
-        `shouldBe` SqlStatement (Select [ Col "Foo" ] [ "Bar" ] (Just (Equal (Col "Foo") (Number 12))))
-
-  describe "SQL To Relational" $ do
-    it "converts a simple Select statement" $ do
-      toRelational (Select [ Col "Foo", Col "Bar"] ["baz"] Nothing )
-        `shouldBe` Proj  [ "Foo", "Bar"] (Rel "baz")
-
-    it "converts a simple Select statement with where clause" $ do
-      toRelational (Select [ Col "Foo", Col "Bar"] ["baz"] (Just (Equal (Col "Foo") (Number 12))) )
-        `shouldBe` Proj  [ "Foo", "Bar"] (Sel (Equal (Col "Foo") (Number 12)) (Rel "baz"))
-
-    it "converts a select statement with multiple from" $ do
-      toRelational (Select [ Col "Foo", Col "Bar"] ["baz", "qix"] Nothing)
-        `shouldBe` Proj [ "Foo", "Bar"] (Prod [ Rel "baz", Rel "qix"])
-
-    it "converts an insert statement" $ do
-      toRelational (Insert "Foo" [ "Col1" ] [ [ "hello"] ])
-      `shouldBe` Append "Foo" (Relation [ "Col1" ] [["hello"]])
-
-    it "converts an create table statement" $ do
-      toRelational (CreateTable "Foo" [ "Col1" ] )
-      `shouldBe` Create "Foo" [ "Col1" ]
-
-  describe "Select Expression Evaluation" $ do
-
-    it "evaluates equality predicate over string when column exists" $ do
-      eval (Equal (Str "a") (Col "col")) [ "col" ] ["a"] `shouldBe` True
-      eval (Equal (Col "col") (Str "a")) [ "col" ] ["a"] `shouldBe` True
-      eval (Equal (Str "a") (Col "col")) [ "col1", "col" ] ["b", "a"] `shouldBe` True
-
-  describe "Relational expression evaluation" $ do
-
-    let relationabc = Relation [ "col1", "col2", "col3"] [["a", "b", "c"]]
-        relationdef = Relation [ "col4" ] [["def"]]
-        relationghc = Relation [ "col5" ] [["ghc (pun intended)"]]
-        relationabcs = Relation [ "col1", "col2", "col3"] [["a", "b", "c"], ["d", "e", "f"]]
-
-    it "evaluates a relation" $ do
-      let  db = populateMapDB [ ( "Foo", relationabc) ]
-      evaluate (Rel "Foo") db
-        `shouldBe` Right relationabc
-
-    it "evaluates another relation" $ do
-      let db = populateMapDB [ ( "Bar", relationdef) ]
-      evaluate (Rel "Bar") db
-        `shouldBe` Right relationdef
-
-    it "evaluates a  relation in a database with several tables" $ do
-      let db = populateMapDB [ ( "Foo", relationabc)
-                        , ( "Bar", relationdef)
-                        ]
-      evaluate (Rel "Bar") db
-        `shouldBe` Right relationdef
-
-    it "returns error when evaluating relation given relation is not in DB" $ do
-      let db = populateMapDB []
-      evaluate (Rel "Bar") db
-        `shouldBe` Left "no table with name \"Bar\""
-
-    it "evaluates cartesian product of 3 relations" $ do
-      let db = populateMapDB [ ("Foo", relationabc)
-                             , ("Bar", relationdef)
-                             , ("Baz", relationghc) ]
-
-      evaluate (Prod [ Rel "Foo", Rel "Bar", Rel "Baz"]) db
-        `shouldBe` Right (Relation [ "col1", "col2", "col3", "col4", "col5" ]
-                           [row1 <> row2 <> row3 | row1 <- [["a", "b", "c"]]
-                                                 , row2 <- [["def"]]
-                                                 , row3 <- [["ghc (pun intended)"]]])
-
-    it "returns error when evaluating cartesian product given one relation does not exist" $ do
-      let db = populateMapDB [ ("Foo", relationabc) ]
-      evaluate (Prod [ Rel "Foo", Rel "Bar"]) db
-        `shouldBe` Left "no table with name \"Bar\""
-
-    it "filter columns when evaluating select clause" $ do
-      let  db = populateMapDB [ ( "Foo", relationabc) ]
-      evaluate (Proj [ "col1"] (Rel "Foo")) db
-        `shouldBe` Right (Relation [ "col1" ] [["a"]])
-
-    it "filter columns when evaluating select clause" $ do
-      let  db = populateMapDB [ ( "Foo", relationabc) ]
-      evaluate (Proj [ "col1", "col2"] (Rel "Foo")) db
-        `shouldBe` Right (Relation [ "col1", "col2" ] [["a", "b"]])
-
-    it "select rows columns when evaluating select/where clause" $ do
-      let  db = populateMapDB [ ( "Foo", relationabcs) ]
-      evaluate (Sel (Equal (Col "col1") (Str "d")) (Rel "Foo")) db
-        `shouldBe` Right (Relation [ "col1", "col2", "col3" ] [["d", "e", "f"]])
-      evaluate (Sel (Equal (Col "col1") (Str "a")) (Rel "Foo")) db
-        `shouldBe` Right (Relation [ "col1", "col2", "col3" ] [["a", "b", "c"]])
-
-    it "returns error when filtering columns on SELECT given column does not exist" $ do
-      let  db = populateMapDB [ ( "Foo", relationabc) ]
-      evaluate (Proj [ "col4"] (Rel "Foo")) db
-        `shouldBe` Left "no column with name \"col4\""
-
-    it "creates a table with input data" $ do
-      let db = populateMapDB []
-
-      evaluate (Create "Foo" [ "Col1" ]) db
-        `shouldBe` Right (Relation [ "Col1"] [])
-
-    it "insert data into an existing table" $ do
-      let db = populateMapDB []
-          sql = do
-            _ <- evaluateDB (Create "Foo" [ "Col1" ])
-            _ <- evaluateDB (Append "Foo" (Relation [ "Col1" ] [ [ "helli" ]]))
-            _ <- evaluateDB (Append "Foo" (Relation [ "Col1" ] [ [ "hello" ]]))
-            evaluateDB (Rel "Foo")
-
-      runDatabase db sql
-        `shouldBe` Right (Relation [ "Col1"] [ [ "helli"] , ["hello"] ])
-
-    it "fails to insert data when columns don't match" $ do
-      let db = populateMapDB []
-          sql = do
-            _ <- evaluateDB (Create "Foo" [ "Col1" ])
-            _ <- evaluateDB (Append "Foo" (Relation [ "Col1" ] [ [ "helli" ]]))
-            _ <- evaluateDB (Append "Foo" (Relation [ "Col2" ] [ [ "hello" ]]))
-            evaluateDB (Rel "Foo")
-
-      runDatabase db sql
-        `shouldBe` Left "Incompatible relation schemas"
-
-    it "evaluates a select over a create and insert" $ do
-      let db = populateMapDB []
-          sql = do
-            _ <- evaluateDB (Create "Foo" [ "Col1" ])
-            _ <- evaluateDB (Create "Bar" [ "Col2" ])
-            _ <- evaluateDB (Append "Foo" (Relation [ "Col1" ] [ [ "hello" ]]))
-            _ <- evaluateDB (Append "Bar" (Relation [ "Col2" ] [ [ "helli" ]]))
-            evaluateDB (Prod [ Rel "Foo", Rel "Bar"])
-
-      runDatabase db sql
-        `shouldBe` Right (Relation [ "Col1" ,"Col2"] [ [ "hello", "helli"] ])
+spec =
+  describe "SQL Mini Interpreter" $ do
+    let populateMapDB rels = populate rels :: MapDB
+    it "interprets '.exit' as Exit command" $ interpret ".exit" `shouldBe` Exit
+    it "interprets SQL commands" $ do
+      let output = do
+            _ <- runCommand "CREATE TABLE Foo (Col1)"
+            _ <- runCommand "INSERT INTO Foo (Col1) VALUES ('helli')"
+            _ <- runCommand "INSERT INTO Foo (Col1) VALUES ('hello')"
+            runCommand "SELECT Col1 FROM Foo"
+      evalState output (populateMapDB []) `shouldBe`
+        Just
+          (pack $
+           show $
+           (Right (Relation ["Col1"] [["helli"], ["hello"]]) :: Either Text Relation))
+    describe "SQL Parser" $ do
+      it "interprets 'SELECT 42' as an SqlStatement" $
+        interpret "SELECT 42" `shouldBe`
+        SqlStatement (Select [Number 42] [] Nothing)
+      it "interprets 'SELECT 1' as an SqlStatement" $
+        interpret "SELECT 1" `shouldBe`
+        SqlStatement (Select [Number 1] [] Nothing)
+      it "interprets 'SELECT Foo, Bar' as a SqlStatement" $
+        interpret "SELECT Foo,Bar" `shouldBe`
+        SqlStatement (Select [Col "Foo", Col "Bar"] [] Nothing)
+      it "interprets 'SELECT Foo, Bar FROM baz' as a SqlStatement" $
+        interpret "SELECT Foo  , Bar FROM baz" `shouldBe`
+        SqlStatement (Select [Col "Foo", Col "Bar"] ["baz"] Nothing)
+      it "interprets unknown string  as Unknown command" $
+        interpret "foo" `shouldBe`
+        Unknown
+          "(line 1, column 1):\nunexpected \"f\"\nexpecting \"SELECT\", \"INSERT\" or \"CREATE\""
+      it "interprets INSERT INTO Foo (Col1) VALUES ('hello') as a SqlStatement" $
+        interpret "INSERT INTO Foo (Col1) VALUES ('hello')" `shouldBe`
+        SqlStatement (Insert "Foo" ["Col1"] [["hello"]])
+      it "interprets CREATE TABLE  Foo (Col1) as a SqlStatement" $
+        interpret "CREATE TABLE Foo (Col1)" `shouldBe`
+        SqlStatement (CreateTable "Foo" ["Col1"])
+      it "interpret WHERE clauses a SqlStatement" $
+        interpret "SELECT Foo FROM Bar WHERE Foo = 12" `shouldBe`
+        SqlStatement
+          (Select [Col "Foo"] ["Bar"] (Just (Equal (Col "Foo") (Number 12))))
+    describe "SQL To Relational" $ do
+      it "converts a simple Select statement" $
+        toRelational (Select [Col "Foo", Col "Bar"] ["baz"] Nothing) `shouldBe`
+        Proj ["Foo", "Bar"] (Rel "baz")
+      it "converts a simple Select statement with where clause" $
+        toRelational
+          (Select
+             [Col "Foo", Col "Bar"]
+             ["baz"]
+             (Just (Equal (Col "Foo") (Number 12)))) `shouldBe`
+        Proj ["Foo", "Bar"] (Sel (Equal (Col "Foo") (Number 12)) (Rel "baz"))
+      it "converts a select statement with multiple from" $
+        toRelational (Select [Col "Foo", Col "Bar"] ["baz", "qix"] Nothing) `shouldBe`
+        Proj ["Foo", "Bar"] (Prod [Rel "baz", Rel "qix"])
+      it "converts an insert statement" $
+        toRelational (Insert "Foo" ["Col1"] [["hello"]]) `shouldBe`
+        Append "Foo" (Relation ["Col1"] [["hello"]])
+      it "converts an create table statement" $
+        toRelational (CreateTable "Foo" ["Col1"]) `shouldBe`
+        Create "Foo" ["Col1"]
+    describe "Select Expression Evaluation" $
+      it "evaluates equality predicate over string when column exists" $ do
+        eval (Equal (Str "a") (Col "col")) ["col"] ["a"] `shouldBe` True
+        eval (Equal (Col "col") (Str "a")) ["col"] ["a"] `shouldBe` True
+        eval (Equal (Str "a") (Col "col")) ["col1", "col"] ["b", "a"] `shouldBe`
+          True
+    describe "Relational expression evaluation" $ do
+      let relationabc = Relation ["col1", "col2", "col3"] [["a", "b", "c"]]
+          relationdef = Relation ["col4"] [["def"]]
+          relationghc = Relation ["col5"] [["ghc (pun intended)"]]
+          relationabcs =
+            Relation ["col1", "col2", "col3"] [["a", "b", "c"], ["d", "e", "f"]]
+      it "evaluates a relation" $ do
+        let db = populateMapDB [("Foo", relationabc)]
+        evaluate (Rel "Foo") db `shouldBe` Right relationabc
+      it "evaluates another relation" $ do
+        let db = populateMapDB [("Bar", relationdef)]
+        evaluate (Rel "Bar") db `shouldBe` Right relationdef
+      it "evaluates a  relation in a database with several tables" $ do
+        let db = populateMapDB [("Foo", relationabc), ("Bar", relationdef)]
+        evaluate (Rel "Bar") db `shouldBe` Right relationdef
+      it "returns error when evaluating relation given relation is not in DB" $ do
+        let db = populateMapDB []
+        evaluate (Rel "Bar") db `shouldBe` Left "no table with name \"Bar\""
+      it "evaluates cartesian product of 3 relations" $ do
+        let db =
+              populateMapDB
+                [ ("Foo", relationabc)
+                , ("Bar", relationdef)
+                , ("Baz", relationghc)
+                ]
+        evaluate (Prod [Rel "Foo", Rel "Bar", Rel "Baz"]) db `shouldBe`
+          Right
+            (Relation
+               ["col1", "col2", "col3", "col4", "col5"]
+               [ row1 <> row2 <> row3
+               | row1 <- [["a", "b", "c"]]
+               , row2 <- [["def"]]
+               , row3 <- [["ghc (pun intended)"]]
+               ])
+      it
+        "returns error when evaluating cartesian product given one relation does not exist" $ do
+        let db = populateMapDB [("Foo", relationabc)]
+        evaluate (Prod [Rel "Foo", Rel "Bar"]) db `shouldBe`
+          Left "no table with name \"Bar\""
+      it "filter columns when evaluating select clause" $ do
+        let db = populateMapDB [("Foo", relationabc)]
+        evaluate (Proj ["col1"] (Rel "Foo")) db `shouldBe`
+          Right (Relation ["col1"] [["a"]])
+      it "filter columns when evaluating select clause" $ do
+        let db = populateMapDB [("Foo", relationabc)]
+        evaluate (Proj ["col1", "col2"] (Rel "Foo")) db `shouldBe`
+          Right (Relation ["col1", "col2"] [["a", "b"]])
+      it "select rows columns when evaluating select/where clause" $ do
+        let db = populateMapDB [("Foo", relationabcs)]
+        evaluate (Sel (Equal (Col "col1") (Str "d")) (Rel "Foo")) db `shouldBe`
+          Right (Relation ["col1", "col2", "col3"] [["d", "e", "f"]])
+        evaluate (Sel (Equal (Col "col1") (Str "a")) (Rel "Foo")) db `shouldBe`
+          Right (Relation ["col1", "col2", "col3"] [["a", "b", "c"]])
+      it
+        "returns error when filtering columns on SELECT given column does not exist" $ do
+        let db = populateMapDB [("Foo", relationabc)]
+        evaluate (Proj ["col4"] (Rel "Foo")) db `shouldBe`
+          Left "no column with name \"col4\""
+      it "creates a table with input data" $ do
+        let db = populateMapDB []
+        evaluate (Create "Foo" ["Col1"]) db `shouldBe`
+          Right (Relation ["Col1"] [])
+      it "insert data into an existing table" $ do
+        let db = populateMapDB []
+            sql = do
+              _ <- evaluateDB (Create "Foo" ["Col1"])
+              _ <- evaluateDB (Append "Foo" (Relation ["Col1"] [["helli"]]))
+              _ <- evaluateDB (Append "Foo" (Relation ["Col1"] [["hello"]]))
+              evaluateDB (Rel "Foo")
+        runDatabase db sql `shouldBe`
+          Right (Relation ["Col1"] [["helli"], ["hello"]])
+      it "fails to insert data when columns don't match" $ do
+        let db = populateMapDB []
+            sql = do
+              _ <- evaluateDB (Create "Foo" ["Col1"])
+              _ <- evaluateDB (Append "Foo" (Relation ["Col1"] [["helli"]]))
+              _ <- evaluateDB (Append "Foo" (Relation ["Col2"] [["hello"]]))
+              evaluateDB (Rel "Foo")
+        runDatabase db sql `shouldBe` Left "Incompatible relation schemas"
+      it "evaluates a select over a create and insert" $ do
+        let db = populateMapDB []
+            sql = do
+              _ <- evaluateDB (Create "Foo" ["Col1"])
+              _ <- evaluateDB (Create "Bar" ["Col2"])
+              _ <- evaluateDB (Append "Foo" (Relation ["Col1"] [["hello"]]))
+              _ <- evaluateDB (Append "Bar" (Relation ["Col2"] [["helli"]]))
+              evaluateDB (Prod [Rel "Foo", Rel "Bar"])
+        runDatabase db sql `shouldBe`
+          Right (Relation ["Col1", "Col2"] [["hello", "helli"]])
