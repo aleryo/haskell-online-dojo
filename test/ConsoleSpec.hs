@@ -100,12 +100,16 @@ spec =
       it "converts an create table statement" $
         toRelational (CreateTable "Foo" ["Col1"]) `shouldBe`
         Create "Foo" ["Col1"]
-    describe "Select Expression Evaluation" $
+    describe "Select Expression Evaluation" $ do
+      let eval' e c r = runDatabase (emptyTables :: MapDB) $ eval e c r
       it "evaluates equality predicate over string when column exists" $ do
-        eval (Equal (Str "a") (Col "col")) ["col"] ["a"] `shouldBe` True
-        eval (Equal (Col "col") (Str "a")) ["col"] ["a"] `shouldBe` True
-        eval (Equal (Str "a") (Col "col")) ["col1", "col"] ["b", "a"] `shouldBe`
-          True
+        eval' (Equal (Str "a") (Col "col")) ["col"] ["a"] `shouldBe` Right True
+        eval' (Equal (Col "col") (Str "a")) ["col"] ["a"] `shouldBe` Right True
+        eval' (Equal (Str "a") (Col "col")) ["col1", "col"] ["b", "a"] `shouldBe`
+          Right True
+      it "raises an error when a column in predicate does not exist" $
+        eval' (Equal (Str "a") (Col "col2")) ["col1", "col"] ["b", "a"] `shouldBe`
+        Left "no column with name \"col2\""
     describe "Relational expression evaluation" $ do
       let relationabc = Relation ["col1", "col2", "col3"] [["a", "b", "c"]]
           relationdef = Relation ["col4"] [["def"]]

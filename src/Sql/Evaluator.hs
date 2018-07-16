@@ -17,6 +17,7 @@ module Sql.Evaluator
   , Relation(..)
   ) where
 
+import           Control.Monad        (filterM)
 import           Control.Monad.Except
 import           Control.Monad.State
 import           Data.List            (elemIndex)
@@ -77,7 +78,7 @@ evaluateDB (Proj selected rel) = do
             Nothing     -> throwError $ columnNotFound col
 evaluateDB (Sel expr rel) = do
   Relation cols rws <- evaluateDB rel
-  pure $ Relation cols (Prelude.filter (eval expr cols) rws)
+  Relation cols <$> filterM (eval expr cols) rws
 evaluateDB (Create tbl cols) = do
   let rel = Relation cols []
   modify $ insert tbl rel
@@ -96,10 +97,10 @@ evaluateDB (Append tbl rel) = do
         else throwError "Incompatible relation schemas"
   return rel
 
-eval :: Expr -> [ColumnName] -> Row -> Bool
+eval :: (Tables db) => Expr -> [ColumnName] -> Row -> Database db Bool
 eval (Equal c'@(Col _c) e'@(Str _s)) col row = eval (Equal e' c') col row
 eval (Equal (Str s) (Col col)) cols vals =
   case col `elemIndex` cols of
-    Just colNum -> vals !! colNum == s
-    Nothing     -> undefined
+    Just colNum -> pure (vals !! colNum == s)
+    Nothing     -> throwError $ columnNotFound col
 eval _ _ _ = undefined
