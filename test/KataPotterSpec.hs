@@ -7,7 +7,7 @@ data Book = Book Int
 
 totalPrice [x, y, z]
   | x /= y && y /= z && x /= z = (8 + 8 + 8) * 0.90
-  | otherwise =  min (totalPrice [x,y] + totalPrice [z]) (totalPrice [x] + totalPrice [y,z])
+  | otherwise =  minimum [totalPrice [x,y] + totalPrice [z], totalPrice [x] + totalPrice [y,z] ]
 totalPrice [x,y]
   | x /= y = (8 + 8) * 0.95
   | otherwise = 8 + totalPrice [y]
