@@ -5,7 +5,8 @@ import           Test.Hspec
 data Book = Book Int
   deriving (Eq)
 
-totalPrice [x, y, z] = (8 + 8 + 8) * 0.90
+totalPrice [x, y, z]
+  | x /= y && y /= z && x /= z = (8 + 8 + 8) * 0.90
 totalPrice [x,y]
   | x /= y = (8 + 8) * 0.95
   | otherwise = 8 + totalPrice [y]
