@@ -8,7 +8,7 @@ data Book = Book Int
 totalPrice [x,y]
   | x /= y = (8 + 8) * 0.95
   | otherwise = 8 + 8
-totalPrice _     = 8
+totalPrice [_]     = 8
 
 spec :: Spec
 spec = describe "Kata Potter" $ do
