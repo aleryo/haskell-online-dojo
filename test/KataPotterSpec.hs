@@ -26,3 +26,7 @@ spec = describe "Kata Potter" $ do
   it "buys two books yields 5% discount" $ do
     totalPrice [ Book 1, Book 2  ] `shouldBe` (8 + 8) * 0.95
     totalPrice [ Book 1, Book 1 ] `shouldBe` (8 + 8)
+
+  it "buys three books yields 10% discount" $ do
+    totalPrice [ Book 1, Book 2  ] `shouldBe` (8 + 8) * 0.95
+    totalPrice [ Book 1, Book 1 ] `shouldBe` (8 + 8)
