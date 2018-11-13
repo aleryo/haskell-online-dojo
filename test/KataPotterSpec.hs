@@ -3,8 +3,11 @@ module KataPotterSpec where
 import           Test.Hspec
 
 data Book = Book Int
+  deriving (Eq)
 
-totalPrice [_,_] = (8 + 8) * 0.95
+totalPrice [x,y]
+  | x /= y = (8 + 8) * 0.95
+  | otherwise = 8 + 8
 totalPrice _     = 8
 
 spec :: Spec
@@ -20,5 +23,6 @@ spec = describe "Kata Potter" $ do
   it "buys one book yields 0 discount" $
     totalPrice [ Book 1 ] `shouldBe` 8
 
-  it "buys two books yields 5% discount" $
+  it "buys two books yields 5% discount" $ do
     totalPrice [ Book 1, Book 2  ] `shouldBe` (8 + 8) * 0.95
+    totalPrice [ Book 1, Book 1 ] `shouldBe` (8 + 8)
