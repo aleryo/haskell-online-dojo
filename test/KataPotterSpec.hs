@@ -5,6 +5,7 @@ import           Test.Hspec
 data Book = Book Int
   deriving (Eq)
 
+totalPrice [x, y, z] = (8 + 8 + 8) * 0.90
 totalPrice [x,y]
   | x /= y = (8 + 8) * 0.95
   | otherwise = 8 + totalPrice [y]
@@ -28,5 +29,4 @@ spec = describe "Kata Potter" $ do
     totalPrice [ Book 1, Book 1 ] `shouldBe` (8 + 8)
 
   it "buys three books yields 10% discount" $ do
-    totalPrice [ Book 1, Book 2  ] `shouldBe` (8 + 8) * 0.95
-    totalPrice [ Book 1, Book 1 ] `shouldBe` (8 + 8)
+    totalPrice [ Book 1, Book 2, Book 3  ] `shouldBe` (8 + 8 + 8) * 0.90
