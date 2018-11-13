@@ -4,7 +4,8 @@ import           Test.Hspec
 
 data Book = Book Int
 
-totalPrice _  = 8
+totalPrice [_,_] = (8 + 8) * 0.95
+totalPrice _     = 8
 
 spec :: Spec
 spec = describe "Kata Potter" $ do
@@ -18,3 +19,6 @@ spec = describe "Kata Potter" $ do
     -- il y a des reductions pour 2 vol -> 5 %, 3 vol -> 10 %, 4 vol -> 20 %, 5 vol -> 25 %
   it "buys one book yields 0 discount" $
     totalPrice [ Book 1 ] `shouldBe` 8
+
+  it "buys two books yields 5% discount" $
+    totalPrice [ Book 1, Book 2  ] `shouldBe` (8 + 8) * 0.95
