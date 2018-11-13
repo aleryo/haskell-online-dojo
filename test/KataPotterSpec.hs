@@ -2,6 +2,10 @@ module KataPotterSpec where
 
 import           Test.Hspec
 
+data Book = Book Int
+
+totalPrice _  = 8
+
 spec :: Spec
 spec = describe "Kata Potter" $ do
   --   2 copies of the first book
@@ -12,6 +16,5 @@ spec = describe "Kata Potter" $ do
     --
     -- quel  est le prix ?
     -- il y a des reductions pour 2 vol -> 5 %, 3 vol -> 10 %, 4 vol -> 20 %, 5 vol -> 25 %
-  it "pass the test" $
-    True `shouldBe` True
-
+  it "buys one book yields 0 discount" $
+    totalPrice [ Book 1 ] `shouldBe` 8
