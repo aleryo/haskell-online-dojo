@@ -7,6 +7,7 @@ data Book = Book Int
 
 totalPrice [x, y, z]
   | x /= y && y /= z && x /= z = (8 + 8 + 8) * 0.90
+  | otherwise = totalPrice [x,y] + totalPrice [z]
 totalPrice [x,y]
   | x /= y = (8 + 8) * 0.95
   | otherwise = 8 + totalPrice [y]
@@ -31,3 +32,4 @@ spec = describe "Kata Potter" $ do
 
   it "buys three books yields 10% discount" $ do
     totalPrice [ Book 1, Book 2, Book 3  ] `shouldBe` (8 + 8 + 8) * 0.90
+    totalPrice [ Book 1, Book 2, Book 2  ] `shouldBe` (8 + 8) * 0.95 + 8
