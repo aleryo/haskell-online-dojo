@@ -21,7 +21,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Interpreter, Sql, Sql.DB, Sql.DB.MapDB, Sql.DB.VectorDB
   ghc-options: -Wall -Werror -fno-warn-orphans
-  other-modules:  Sql.Parser, Sql.Evaluator, Sql.Relational
+  other-modules:  Sql.Parser, Sql.Evaluator, Sql.Relational, Variance
   build-depends:       base
                      , bytestring
                      , cereal
