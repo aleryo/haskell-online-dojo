@@ -1,3 +1,4 @@
+{-# LANGUAGE KindSignatures #-}
 module Variance where
 
 --                  Position of
@@ -33,10 +34,10 @@ newtype T5 a = T5 ((a -> Int) -> Int)
 instance Functor T5 where
   fmap f (T5 g) = T5 ( \ k -> g (k . f))
 
-newtype Contravariant (f :: * -> *) = Cv  
+-- newtype Contravariant (f :: * -> *) = Cv
 
-class Contravariant f where
-    contramat :: (a -> b) -> f b -> f a
+-- class Contra f where
+--     contramat :: (a -> b) -> f b -> f a
 
 newtype Predicate a = Predicate { getPredicate :: a -> Bool }
 

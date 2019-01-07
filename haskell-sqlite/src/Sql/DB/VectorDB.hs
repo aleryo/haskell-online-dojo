@@ -5,10 +5,10 @@
 module Sql.DB.VectorDB where
 
 import           Data.ByteString    as BS
-import           Data.Monoid
 import           Data.Serialize
 import           Data.Text.Encoding
 import           Sql.DB
+
 
 -- ** Binary DB
 

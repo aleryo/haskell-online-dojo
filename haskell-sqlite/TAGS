@@ -1,0 +1,220 @@
+
+./Setup.hs,15
+main main1,2
+
+./app/Main.hs,56
+module Main Main0,1
+main main14,15
+main main15,16
+
+./test/ConsoleSpec.hs,378
+module ConsoleSpec ConsoleSpec2,3
+spec spec40,41
+spec spec41,42
+evalExpr evalExpr206,207
+malformedExpressionRaisesError malformedExpressionRaisesError208,209
+malformedExpressionRaisesError malformedExpressionRaisesError209,210
+newtype NonBooleanExpression NonBooleanExpression212,213
+  NonBooleanExpression NonBooleanExpression213,214
+instance instance216,217
+
+./test/KataPotterSpec.hs,150
+module KataPotterSpec KataPotterSpec0,1
+data Book Book4,5
+data Book = Book Book4,5
+totalPrice totalPrice7,8
+spec spec15,16
+spec spec16,17
+
+./test/Spec.hs,0
+
+./test/Sql/DB/VectorDBSpec.hs,1015
+module Sql.DB.VectorDBSpec Sql.DB.VectorDBSpec3,4
+spec spec14,15
+spec spec15,16
+prop_canRoundtripRelationSerialization prop_canRoundtripRelationSerialization25,26
+prop_canRoundtripRelationSerialization prop_canRoundtripRelationSerialization26,27
+prop_canLookupInsertedRelations prop_canLookupInsertedRelations29,30
+prop_canLookupInsertedRelations prop_canLookupInsertedRelations30,31
+prop_canStoreAndLoadAVectorDB prop_canStoreAndLoadAVectorDB38,39
+prop_canStoreAndLoadAVectorDB prop_canStoreAndLoadAVectorDB39,40
+newtype TblName TblName47,48
+newtype TblName = TblName TblName47,48
+mkTableNames mkTableNames50,51
+mkTableNames mkTableNames51,52
+instance instance53,54
+genTableName genTableName56,57
+genTableName genTableName57,58
+genColumns genColumns67,68
+genColumns genColumns68,69
+genColumn genColumn70,71
+genColumn genColumn71,72
+genRows genRows76,77
+genRows genRows77,78
+genLines genLines80,81
+genLines genLines81,82
+genData genData83,84
+genData genData84,85
+
+./src/Interpreter.hs,388
+module InterpreterInterpreter6,7
+data Command Command23,24
+data Command = ExitExit23,24
+             | SqlStatement SqlStatement24,25
+             | Unknown Unknown25,26
+interpret interpret28,29
+interpret interpret29,30
+runCommand runCommand34,35
+runCommand runCommand35,36
+console' console'45,46
+console' console'46,47
+console console55,56
+console console56,57
+
+./src/Sql.hs,19
+module SqlSql3,4
+
+./src/Variance.hs,451
+module Variance Variance1,2
+newtype T1 T110,11
+newtype T1 a = T1 T110,11
+instance instance12,13
+newtype T2 T215,16
+newtype T2 a = T2 T215,16
+newtype T3 T320,21
+newtype T3 a = T3 T320,21
+newtype T4 T425,26
+newtype T4 a = T4 T425,26
+newtype T5 T531,32
+newtype T5 a = T5 T531,32
+newtype Predicate Predicate41,42
+newtype Predicate a = Predicate Predicate41,42
+newtype Predicate a = Predicate { getPredicate getPredicate41,42
+
+./src/Sql/Relational.hs,388
+module Sql.Relational(Sql.Relational0,1
+data Relational Relational9,10
+data Relational = Rel Rel9,10
+                | Proj Proj10,11
+                | Prod Prod11,12
+                | Sel Sel12,13
+                | Create Create13,14
+                | Append Append14,15
+toRelational toRelational17,18
+toRelational toRelational18,19
+eval eval33,34
+eval eval34,35
+
+./src/Sql/Parser.hs,1620
+module Sql.Parser Sql.Parser2,3
+data Expr Expr10,11
+data Expr = Number Number10,11
+          | Col Col11,12
+          | Str Str12,13
+          | Equal Equal13,14
+instance instance16,17
+type TableName TableName19,20
+type ColumnName ColumnName21,22
+data Sql Sql23,24
+data Sql = Select Select23,24
+         | Insert Insert24,25
+         | CreateTable CreateTable25,26
+parseSQL parseSQL29,30
+parseSQL parseSQL30,31
+type Parser Parser37,38
+type Parser a a37,38
+string_ string_39,40
+string_ string_40,41
+char_ char_42,43
+char_ char_43,44
+selectClause selectClause45,46
+selectClause selectClause46,47
+insertClause insertClause56,57
+insertClause insertClause57,58
+createClause createClause67,68
+createClause createClause68,69
+betweenParens betweenParens76,77
+betweenParens betweenParens77,78
+columnList columnList85,86
+columnList columnList86,87
+fromClause fromClause88,89
+fromClause fromClause89,90
+whereClause whereClause94,95
+whereClause whereClause95,96
+expressionList expressionList103,104
+expressionList expressionList104,105
+tableList tableList106,107
+tableList tableList107,108
+expression expression109,110
+expression expression110,111
+stringLiteral stringLiteral115,116
+stringLiteral stringLiteral116,117
+betweenQuotes betweenQuotes118,119
+betweenQuotes betweenQuotes119,120
+comma comma121,122
+comma comma122,123
+columnName columnName124,125
+columnName columnName125,126
+tableName tableName127,128
+tableName tableName128,129
+label label130,131
+label label131,132
+integer integer136,137
+integer integer137,138
+
+./src/Sql/Evaluator.hs,606
+module Sql.EvaluatorSql.Evaluator7,8
+type EvaluationError EvaluationError31,32
+tableNotFound tableNotFound33,34
+tableNotFound tableNotFound34,35
+columnNotFound columnNotFound36,37
+columnNotFound columnNotFound37,38
+newtype Database Database39,40
+newtype Database db a = DatabaseDatabase39,40
+  { tables tables40,41
+evaluate evaluate48,49
+evaluate evaluate49,50
+execDatabase execDatabase51,52
+execDatabase execDatabase53,54
+runDatabase runDatabase55,56
+runDatabase runDatabase56,57
+evaluateDB evaluateDB58,59
+evaluateDB evaluateDB59,60
+eval eval99,100
+eval eval100,101
+
+./src/Sql/DB.hs,667
+module Sql.DB Sql.DB1,2
+type TableName TableName5,6
+type ColumnName ColumnName7,8
+type Row Row9,10
+data Relation Relation11,12
+data Relation = Relation Relation11,12
+data Relation = Relation { columnNames columnNames11,12
+                         , rows rows12,13
+type Table Table17,18
+class Tables Tables19,20
+class Tables Tables19,20
+  emptyTables emptyTables20,21
+  lookup lookup21,22
+  insert insert22,23
+  populate populate24,25
+  populate populate25,26
+class (Tables tables, Monad m) => Persistable Persistable29,30
+class (Tables tables, Monad m) => Persistable Persistable29,30
+  saveDB saveDB30,31
+  loadDB loadDB31,32
+
+./src/Sql/DB/VectorDB.hs,250
+module Sql.DB.VectorDB Sql.DB.VectorDB4,5
+newtype BytesDB BytesDB14,15
+newtype BytesDB = BytesDB BytesDB14,15
+newtype BytesDB = BytesDB { bytes bytes14,15
+makeBytesDB makeBytesDB17,18
+makeBytesDB makeBytesDB18,19
+instance instance20,21
+
+./src/Sql/DB/MapDB.hs,87
+module Sql.DB.MapDB Sql.DB.MapDB3,4
+type MapDB MapDB10,11
+instance instance12,13

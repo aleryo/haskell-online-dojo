@@ -3,7 +3,6 @@ module Sql.Relational(
     Relational(..)
 ) where
 
-import           Data.Monoid
 import           Data.Text
 import           Sql.DB
 import           Sql.Parser
