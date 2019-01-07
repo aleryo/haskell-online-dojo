@@ -38,7 +38,7 @@ executables:
 
 tests:
   djambi-test:
-    main:                Spec.hs
+    main:                test.hs
     source-dirs:         test
     ghc-options:
     - -threaded
@@ -46,3 +46,5 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - djambi
+    - hspec
+    - hspec-discover
