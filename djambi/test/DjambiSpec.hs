@@ -3,23 +3,26 @@ module DjambiSpec where
 
 import           Test.Hspec
 
-main :: IO ()
-main = putStrLn "Test suite not yet implemented"
-
-data Game = Game [ Play ]
+data Game = Game { plays :: [ Play ] }
   deriving (Eq, Show)
 
 initialGame :: Game
 initialGame = Game []
 
 getBoard :: Game -> Board
-getBoard = const initialBoard
+getBoard = foldr apply initialBoard . plays
+
+-- assumes Play is always valid wrt Board
+-- implies apply is NOT total
+apply :: Play -> Board -> Board
+apply (Play (C, 1) to) (Board [ Militant Vert (C,1)]) = Board [ Militant Vert to ]
+apply (Play (D, 1) to) (Board [ Militant Vert (D,1)]) = Board [ Militant Vert to ]
 
 data Board = Board [ Piece ]
   deriving (Eq, Show)
 
 initialBoard :: Board
-initialBoard = Board []
+initialBoard = Board [ Militant Vert (C,1) ]
 
 data Piece = Militant Party Position
   deriving (Eq, Show)
@@ -39,8 +42,11 @@ type Position = (Row, Col)
 data Play = Play Position Position
   deriving (Eq, Show)
 
-play :: Play -> Game -> Game
-play p (Game ps) = Game $ p:ps
+data DjambiError = InvalidPlay
+  deriving (Eq, Show)
+
+play :: Play -> Game -> Either DjambiError Game
+play p (Game ps) = Right $ Game $ p:ps
 
 -- Plan
 --
@@ -70,8 +76,15 @@ spec = describe "Djambi Game" $ do
 
     it "updates the game state when playing, given a valid play" $ do
       let updatedGame = Game [validplay]
-      play validplay initialGame  `shouldBe` updatedGame
+      play validplay initialGame  `shouldBe` Right updatedGame
 
-    it "returns updated board when there is one play" $
-      getBoard (play validplay initialGame) `shouldBe` Board [ Militant Vert (D, 1) ]
+    it "rejects play if it is not valid" $
+      play (Play (C,1) (D, 3)) initialGame  `shouldBe` Left InvalidPlay
+
+    -- it "returns updated board when there is one play" $ do
+    --   getBoard (play validplay initialGame) `shouldBe` Board [ Militant Vert (D, 1) ]
+    --   getBoard (play (Play (C, 1) (D, 2)) initialGame) `shouldBe` Board [ Militant Vert (D, 2) ]
+
+    -- it "returns updated board when there are 2 plays" $
+    --   getBoard (play (Play (D,1) (D,2)) (play validplay initialGame)) `shouldBe` Board [ Militant Vert (D, 2) ]
 
