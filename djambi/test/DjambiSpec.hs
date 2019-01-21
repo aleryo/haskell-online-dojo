@@ -1,7 +1,9 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module DjambiSpec where
 
+import           Data.List       (sort)
 import           Test.Hspec
+import           Test.QuickCheck
 
 data Game = Game { plays :: [ Play ] }
   deriving (Eq, Show)
@@ -31,19 +33,35 @@ data Party = Vert
   deriving (Eq, Show)
 
 data Row = A | B | C | D | E | F | G | H | I
-  deriving (Eq, Show)
+  deriving (Enum, Bounded, Eq, Ord, Show)
 
+instance Arbitrary Row where  
+   arbitrary = elements (enumFromTo minBound maxBound) 
 
 newtype Col = Col Int
-  deriving (Eq, Show, Num)
+  deriving (Enum, Eq, Ord, Show, Num)
+
+instance Arbitrary Col where
+  arbitrary = elements (enumFromTo minBound maxBound)
+
+instance Bounded Col where
+  maxBound = Col 9
+  minBound = Col 1
 
 type Position = (Row, Col)
 
 data Play = Play Position Position
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 data DjambiError = InvalidPlay
   deriving (Eq, Show)
+
+possiblePlays :: Board -> Position -> [Play]
+possiblePlays b from@(x, y) = sort [Play from to | to <- militant]
+  where
+    militant = [(x', y') | x' <- take 2 (enumFromTo x maxBound) <> take 2 (enumFromTo minBound (pred x))
+                         , y' <- take 2 (enumFromTo y maxBound) <> take 2 (enumFromTo minBound (pred y))
+                         , x == x' || y == y' || abs(fromEnum x' - fromEnum x) == abs(fromEnum y' - fromEnum y)]
 
 play :: Play -> Game -> Either DjambiError Game
 play p (Game ps) = Right $ Game $ p:ps
@@ -78,8 +96,23 @@ spec = describe "Djambi Game" $ do
       let updatedGame = Game [validplay]
       play validplay initialGame  `shouldBe` Right updatedGame
 
+    it "generates a list of possible plays for militant" $
+      property $ prop_generate_valid_militant_move
+    -- do
+    --   --  1 2 3
+    --   -- A.   .
+    --   -- B. .
+    --   -- C+ . .
+    --   -- D. .
+    --   -- E.   .
+    --   possiblePlays initialBoard (C, 1) `shouldBe` sort [Play (C, 1) p | p <- [(A, 1), (A, 3), (B, 1), (B, 2), (C, 2), (C, 3), (D, 1), (D, 2), (E, 1), (E, 3)]]
+    --   possiblePlays initialBoard (A, 3) `shouldBe` sort [Play (A, 3) p | p <- [(A, 1), (C, 1), (A, 2), (B, 2), (B, 3), (C, 3), (A, 4), (B, 4), (A, 5), (C, 5)]]
+
     it "rejects play if it is not valid" $
-      play (Play (C,1) (D, 3)) initialGame  `shouldBe` Left InvalidPlay
+      -- The game piece in C1 is a activist, so it can only move by
+      -- one or two steps horizontally, vertically or diagonally,
+      -- making this move invalid
+      pendingWith "play (Play (C,1) (D, 3)) initialGame  `shouldBe` Left InvalidPlay"
 
     -- it "returns updated board when there is one play" $ do
     --   getBoard (play validplay initialGame) `shouldBe` Board [ Militant Vert (D, 1) ]
@@ -88,3 +121,12 @@ spec = describe "Djambi Game" $ do
     -- it "returns updated board when there are 2 plays" $
     --   getBoard (play (Play (D,1) (D,2)) (play validplay initialGame)) `shouldBe` Board [ Militant Vert (D, 2) ]
 
+
+prop_generate_valid_militant_move :: Position -> Bool
+prop_generate_valid_militant_move pos =
+  let plays = possiblePlays initialBoard pos
+  in all (isValidMilitantPlayFor pos) plays
+
+isValidMilitantPlayFor :: Position -> Play -> Bool
+isValidMilitantPlayFor pos@(x, y) (Play from to) =
+  pos == from

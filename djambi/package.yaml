@@ -48,3 +48,4 @@ tests:
     - djambi
     - hspec
     - hspec-discover
+    - QuickCheck
