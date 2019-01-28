@@ -1,6 +1,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module DjambiSpec where
 
+import           Control.Monad
+import           Data.Functor
 import           Data.List       (sort)
 import           Test.Hspec
 import           Test.QuickCheck
@@ -35,8 +37,8 @@ data Party = Vert
 data Row = A | B | C | D | E | F | G | H | I
   deriving (Enum, Bounded, Eq, Ord, Show)
 
-instance Arbitrary Row where  
-   arbitrary = elements (enumFromTo minBound maxBound) 
+instance Arbitrary Row where
+   arbitrary = elements (enumFromTo minBound maxBound)
 
 newtype Col = Col Int
   deriving (Enum, Eq, Ord, Show, Num)
@@ -63,6 +65,19 @@ possiblePlays b from@(x, y) = sort [Play from to | to <- militant]
                          , y' <- take 2 (enumFromTo y maxBound) <> take 2 (enumFromTo minBound (pred y))
                          , x == x' || y == y' || abs(fromEnum x' - fromEnum x) == abs(fromEnum y' - fromEnum y)]
 
+data Direction = East | South | West | North
+  deriving (Eq, Show)
+
+possibleMove :: Position -> Direction -> Integer -> Maybe Position
+possibleMove (l, c) East n =
+  let c' = c + fromInteger n in guard (c' <= maxBound) $> (l, c')
+possibleMove (l, c) West n =
+  let c' = c - fromInteger n in guard (c' >= minBound) $> (l, c')
+possibleMove (l, c) South n =
+  let l' = fromEnum l + fromInteger n in guard (l' <= fromEnum (maxBound :: Row)) $> (toEnum l', c)
+possibleMove (l, c) _ n =
+  let l' = fromEnum l - fromInteger n in guard (l' >= fromEnum (minBound :: Row)) $> (toEnum l', c)
+
 play :: Play -> Game -> Either DjambiError Game
 play p (Game ps) = Right $ Game $ p:ps
 
@@ -72,6 +87,8 @@ play p (Game ps) = Right $ Game $ p:ps
 --     - get current Game
 --     - get possible plays :: Game -> [ Play ]
 --     - apply a Play on a Game
+--     1.1 list possible plays
+--       - use same type for rows and cols
 --  2. scaffold HTTP server to serve JSON
 --  3. provide HTML Content type
 --
@@ -96,9 +113,24 @@ spec = describe "Djambi Game" $ do
       let updatedGame = Game [validplay]
       play validplay initialGame  `shouldBe` Right updatedGame
 
-    it "generates a list of possible plays for militant" $
-      property $ prop_generate_valid_militant_move
-    -- do
+    describe "Coordinates computation" $ do
+      it "can compute abstract movement of a piece horizontally" $ do
+          possibleMove (C, 1) East 1 `shouldBe` Just (C, 2)
+          possibleMove (C, 2) East 1 `shouldBe` Just (C, 3)
+          possibleMove (C, 9) East 1 `shouldBe` Nothing
+          possibleMove (C, 9) West 1 `shouldBe` Just (C,8)
+          possibleMove (D, 7) West 1 `shouldBe` Just (D,6)
+          possibleMove (D, 7) East 1 `shouldBe` Just (D,8)
+
+      it "can compute abstract movement of a piece vertically" $ do
+          possibleMove (C, 1) South 1 `shouldBe` Just (D, 1)
+          possibleMove (I, 1) South 1 `shouldBe` Nothing
+          possibleMove (C, 1) North 1 `shouldBe` Just (B, 1)
+          possibleMove (A, 1) North 1 `shouldBe` Nothing
+          possibleMove (C, 3) North 1 `shouldBe` Just (B, 3)
+          possibleMove (C, 3) South 1 `shouldBe` Just (D, 3)
+
+    -- it "generates a list of possible plays for militant" $ do
     --   --  1 2 3
     --   -- A.   .
     --   -- B. .
@@ -120,13 +152,3 @@ spec = describe "Djambi Game" $ do
 
     -- it "returns updated board when there are 2 plays" $
     --   getBoard (play (Play (D,1) (D,2)) (play validplay initialGame)) `shouldBe` Board [ Militant Vert (D, 2) ]
-
-
-prop_generate_valid_militant_move :: Position -> Bool
-prop_generate_valid_militant_move pos =
-  let plays = possiblePlays initialBoard pos
-  in all (isValidMilitantPlayFor pos) plays
-
-isValidMilitantPlayFor :: Position -> Play -> Bool
-isValidMilitantPlayFor pos@(x, y) (Play from to) =
-  pos == from
