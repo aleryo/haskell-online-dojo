@@ -19,14 +19,14 @@ getBoard = foldr apply initialBoard . plays
 -- assumes Play is always valid wrt Board
 -- implies apply is NOT total
 apply :: Play -> Board -> Board
-apply (Play (C, 1) to) (Board [ Militant Vert (C,1)]) = Board [ Militant Vert to ]
-apply (Play (D, 1) to) (Board [ Militant Vert (D,1)]) = Board [ Militant Vert to ]
+apply (Play (C, 1) to) (Board [ Militant Vert (C, 1)]) = Board [ Militant Vert to ]
+apply (Play (D, 1) to) (Board [ Militant Vert (D, 1)]) = Board [ Militant Vert to ]
 
 data Board = Board [ Piece ]
   deriving (Eq, Show)
 
 initialBoard :: Board
-initialBoard = Board [ Militant Vert (C,1) ]
+initialBoard = Board [ Militant Vert (C, 1) ]
 
 data Piece = Militant Party Position
   deriving (Eq, Show)
@@ -34,21 +34,49 @@ data Piece = Militant Party Position
 data Party = Vert
   deriving (Eq, Show)
 
-data Row = A | B | C | D | E | F | G | H | I
+data Index = A | B | C | D | E | F | G | H | I
   deriving (Enum, Bounded, Eq, Ord, Show)
 
-instance Arbitrary Row where
-   arbitrary = elements (enumFromTo minBound maxBound)
+newtype Col = Col { col :: Index } 
+  deriving (Enum, Bounded, Eq, Ord, Num)
 
-newtype Col = Col Int
-  deriving (Enum, Eq, Ord, Show, Num)
+type Row = Index 
+
+instance Show Col where
+  show c = case col c of
+    A -> "1"
+    B -> "2"
+    C -> "3"
+    D -> "4"
+    E -> "5"
+    F -> "6"
+    G -> "7"
+    H -> "8"
+    I -> "9"
+
+instance Num Index where
+  fromInteger 1 = A
+  fromInteger 2 = B
+  fromInteger 3 = C
+  fromInteger 4 = D
+  fromInteger 5 = E
+  fromInteger 6 = F
+  fromInteger 7 = G
+  fromInteger 8 = H
+  fromInteger 9 = I
+  fromInteger _ = error "out of bounds"
+
+  (+)    _ _ = error "Unsupported"
+  (*)    _ _ = error "Unsupported"
+  (-)    _ _ = error "Unsupported"
+  signum _   = error "Unsupported"
+  abs    _   = error "Unsupported"
 
 instance Arbitrary Col where
-  arbitrary = elements (enumFromTo minBound maxBound)
+   arbitrary = elements (enumFromTo minBound maxBound)
 
-instance Bounded Col where
-  maxBound = Col 9
-  minBound = Col 1
+instance Arbitrary Index where
+  arbitrary = elements (enumFromTo minBound maxBound)
 
 type Position = (Row, Col)
 
@@ -57,6 +85,12 @@ data Play = Play Position Position
 
 data DjambiError = InvalidPlay
   deriving (Eq, Show)
+
+safeShift :: (Bounded a, Ord a, Enum a) => a -> Integer -> Maybe a
+safeShift value shift
+  | shift == 0 = pure value
+  | shift >  0 = guard (value /= maxBound) *> safeShift (succ value) (pred shift)
+  | otherwise  = guard (value /= minBound) *> safeShift (pred value) (succ shift)
 
 possiblePlays :: Board -> Position -> [Play]
 possiblePlays b from@(x, y) = sort [Play from to | to <- militant]
@@ -69,14 +103,10 @@ data Direction = East | South | West | North
   deriving (Eq, Show)
 
 possibleMove :: Position -> Direction -> Integer -> Maybe Position
-possibleMove (l, c) East n =
-  let c' = c + fromInteger n in guard (c' <= maxBound) $> (l, c')
-possibleMove (l, c) West n =
-  let c' = c - fromInteger n in guard (c' >= minBound) $> (l, c')
-possibleMove (l, c) South n =
-  let l' = fromEnum l + fromInteger n in guard (l' <= fromEnum (maxBound :: Row)) $> (toEnum l', c)
-possibleMove (l, c) _ n =
-  let l' = fromEnum l - fromInteger n in guard (l' >= fromEnum (minBound :: Row)) $> (toEnum l', c)
+possibleMove (l, c) East n = (\c' -> (l, c')) <$> (safeShift c n)
+possibleMove (l, c) West n = (\c' -> (l, c')) <$> (safeShift c (- n))
+possibleMove (l, c) South n = (\l' -> (l', c)) <$> (safeShift l n)
+possibleMove (l, c) North n = (\l' -> (l', c)) <$> (safeShift l (- n))
 
 play :: Play -> Game -> Either DjambiError Game
 play p (Game ps) = Right $ Game $ p:ps
@@ -117,10 +147,11 @@ spec = describe "Djambi Game" $ do
       it "can compute abstract movement of a piece horizontally" $ do
           possibleMove (C, 1) East 1 `shouldBe` Just (C, 2)
           possibleMove (C, 2) East 1 `shouldBe` Just (C, 3)
+          possibleMove (C, 2) East 1 `shouldBe` Just (C, 3)
           possibleMove (C, 9) East 1 `shouldBe` Nothing
-          possibleMove (C, 9) West 1 `shouldBe` Just (C,8)
-          possibleMove (D, 7) West 1 `shouldBe` Just (D,6)
-          possibleMove (D, 7) East 1 `shouldBe` Just (D,8)
+          possibleMove (C, 9) West 1 `shouldBe` Just (C, 8)
+          possibleMove (D, 7) West 1 `shouldBe` Just (D, 6)
+          possibleMove (D, 7) East 1 `shouldBe` Just (D, 8)
 
       it "can compute abstract movement of a piece vertically" $ do
           possibleMove (C, 1) South 1 `shouldBe` Just (D, 1)
