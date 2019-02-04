@@ -1,10 +1,15 @@
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DerivingStrategies         #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE StandaloneDeriving         #-}
 module Djambi where
 
 import           Control.Monad
+import           Data.Aeson    (FromJSON, ToJSON)
 import           Data.Functor
 import           Data.List     (sort)
 import           Data.Maybe
+import           GHC.Generics
 
 data Game = Game { plays :: [ Play ] }
   deriving (Eq, Show)
@@ -22,22 +27,37 @@ apply (Play (C, 1) to) (Board [ Militant Vert (C, 1)]) = Board [ Militant Vert t
 apply (Play (D, 1) to) (Board [ Militant Vert (D, 1)]) = Board [ Militant Vert to ]
 
 data Board = Board [ Piece ]
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
+
+instance ToJSON Board
+instance FromJSON Board
 
 initialBoard :: Board
 initialBoard = Board [ Militant Vert (C, 1) ]
 
 data Piece = Militant Party Position
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
-data Party = Vert
-  deriving (Eq, Show)
+instance ToJSON Piece
+instance FromJSON Piece
+
+data Party = Vert | Rouge
+  deriving (Eq, Show, Generic)
+
+instance ToJSON Party
+instance FromJSON Party
 
 data Index = A | B | C | D | E | F | G | H | I
-  deriving (Enum, Bounded, Eq, Ord, Show)
+  deriving (Enum, Bounded, Eq, Ord, Show, Generic)
+
+instance ToJSON Index
+instance FromJSON Index
 
 newtype Col = Col { col :: Index }
   deriving (Enum, Bounded, Eq, Ord, Num)
+
+deriving newtype instance ToJSON Col
+deriving newtype instance FromJSON Col
 
 type Row = Index
 

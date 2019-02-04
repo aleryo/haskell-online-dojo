@@ -1,11 +1,17 @@
 module DjambiSpec where
 
 import           Control.Monad
+import           Data.Aeson              (encode)
 import           Data.Functor
-import           Data.List       (sort)
+import           Data.List               (sort)
 import           Data.Maybe
+import           Data.String             (fromString)
+import           Data.Text.Lazy          (unpack)
+import           Data.Text.Lazy.Encoding (decodeUtf8)
 import           Djambi
+import           Djambi.Server
 import           Test.Hspec
+import           Test.Hspec.Wai          hiding (pendingWith)
 import           Test.QuickCheck
 
 -- Plan
@@ -23,12 +29,11 @@ import           Test.QuickCheck
 spec :: Spec
 spec = describe "Djambi Game" $ do
 
-  it "on GET /game returns state of the game as JSON" $
-    -- client <--- game state + possible plays
-    -- client ---> play
-    -- client <--- game state + possible plays
-    -- ...
-    pendingWith "need server scaffolding"
+  with djambiApp $ describe "Djambi Server" $
+
+    it "on GET /game returns state of the game as JSON" $ do
+      let encodedBoard = unpack $ decodeUtf8 $ encode initialBoard
+      get "/game" `shouldRespondWith` fromString encodedBoard
 
   describe "Core Game Logic" $ do
 

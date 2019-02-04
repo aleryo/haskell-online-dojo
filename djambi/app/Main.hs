@@ -1,6 +1,7 @@
 module Main where
 
-import Lib
+import           Djambi.Server
+import           Network.Wai.Handler.Warp
 
 main :: IO ()
-main = someFunc
+main = run 3333 djambiServer

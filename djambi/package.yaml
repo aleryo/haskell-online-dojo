@@ -6,6 +6,9 @@ author:              "Author name here"
 maintainer:          "example@example.com"
 copyright:           "2019 Author name here"
 
+default-extensions:
+- OverloadedStrings
+
 extra-source-files:
 - README.md
 - ChangeLog.md
@@ -20,7 +23,12 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/githubuser/djambi#readme>
 
 dependencies:
+- aeson
 - base >= 4.7 && < 5
+- http-types
+- text
+- wai
+- warp
 
 library:
   source-dirs: src
@@ -48,4 +56,5 @@ tests:
     - djambi
     - hspec
     - hspec-discover
+    - hspec-wai
     - QuickCheck
