@@ -4,6 +4,7 @@ module DjambiSpec where
 import           Control.Monad
 import           Data.Functor
 import           Data.List       (sort)
+import           Data.Maybe
 import           Test.Hspec
 import           Test.QuickCheck
 
@@ -37,10 +38,10 @@ data Party = Vert
 data Index = A | B | C | D | E | F | G | H | I
   deriving (Enum, Bounded, Eq, Ord, Show)
 
-newtype Col = Col { col :: Index } 
+newtype Col = Col { col :: Index }
   deriving (Enum, Bounded, Eq, Ord, Num)
 
-type Row = Index 
+type Row = Index
 
 instance Show Col where
   show c = case col c of
@@ -95,18 +96,21 @@ safeShift value shift
 possiblePlays :: Board -> Position -> [Play]
 possiblePlays b from@(x, y) = sort [Play from to | to <- militant]
   where
-    militant = [(x', y') | x' <- take 2 (enumFromTo x maxBound) <> take 2 (enumFromTo minBound (pred x))
-                         , y' <- take 2 (enumFromTo y maxBound) <> take 2 (enumFromTo minBound (pred y))
-                         , x == x' || y == y' || abs(fromEnum x' - fromEnum x) == abs(fromEnum y' - fromEnum y)]
+    militant = catMaybes [ possibleMove from dir n | dir <- enumFromTo minBound maxBound, n <- [1,2] ]
 
 data Direction = East | South | West | North
-  deriving (Eq, Show)
+               | SE | SW | NE | NW
+  deriving (Eq, Show, Enum, Bounded)
 
 possibleMove :: Position -> Direction -> Integer -> Maybe Position
-possibleMove (l, c) East n = (\c' -> (l, c')) <$> (safeShift c n)
-possibleMove (l, c) West n = (\c' -> (l, c')) <$> (safeShift c (- n))
-possibleMove (l, c) South n = (\l' -> (l', c)) <$> (safeShift l n)
-possibleMove (l, c) North n = (\l' -> (l', c)) <$> (safeShift l (- n))
+possibleMove (l, c) East n  = (\c' -> (l, c')) <$> safeShift c n
+possibleMove (l, c) West n  = (\c' -> (l, c')) <$> safeShift c (- n)
+possibleMove (l, c) South n = (\l' -> (l', c)) <$> safeShift l n
+possibleMove (l, c) North n = (\l' -> (l', c)) <$> safeShift l (- n)
+possibleMove p      SE n    = foldM (\pos dir -> possibleMove pos dir n) p [East, South]
+possibleMove p      SW n    = foldM (\pos dir -> possibleMove pos dir n) p [West, South]
+possibleMove p      NE n    = foldM (\pos dir -> possibleMove pos dir n) p [East, North]
+possibleMove p      NW n    = foldM (\pos dir -> possibleMove pos dir n) p [West, North]
 
 play :: Play -> Game -> Either DjambiError Game
 play p (Game ps) = Right $ Game $ p:ps
@@ -122,6 +126,7 @@ play p (Game ps) = Right $ Game $ p:ps
 --  2. scaffold HTTP server to serve JSON
 --  3. provide HTML Content type
 --
+
 spec :: Spec
 spec = describe "Djambi Game" $ do
 
@@ -161,15 +166,21 @@ spec = describe "Djambi Game" $ do
           possibleMove (C, 3) North 1 `shouldBe` Just (B, 3)
           possibleMove (C, 3) South 1 `shouldBe` Just (D, 3)
 
-    -- it "generates a list of possible plays for militant" $ do
-    --   --  1 2 3
-    --   -- A.   .
-    --   -- B. .
-    --   -- C+ . .
-    --   -- D. .
-    --   -- E.   .
-    --   possiblePlays initialBoard (C, 1) `shouldBe` sort [Play (C, 1) p | p <- [(A, 1), (A, 3), (B, 1), (B, 2), (C, 2), (C, 3), (D, 1), (D, 2), (E, 1), (E, 3)]]
-    --   possiblePlays initialBoard (A, 3) `shouldBe` sort [Play (A, 3) p | p <- [(A, 1), (C, 1), (A, 2), (B, 2), (B, 3), (C, 3), (A, 4), (B, 4), (A, 5), (C, 5)]]
+      it "can compute abstract movement of a piece diagonally" $ do
+          possibleMove (C, 1) SE 1 `shouldBe` Just (D, 2)
+          possibleMove (C, 2) SW 1 `shouldBe` Just (D, 1)
+          possibleMove (C, 1) NE 1 `shouldBe` Just (B, 2)
+          possibleMove (C, 2) NW 1 `shouldBe` Just (B, 1)
+
+    it "generates a list of possible plays for militant" $ do
+      --  1 2 3
+      -- A.   .
+      -- B. .
+      -- C+ . .
+      -- D. .
+      -- E.   .
+      possiblePlays initialBoard (C, 1) `shouldBe` sort [Play (C, 1) p | p <- [(A, 1), (A, 3), (B, 1), (B, 2), (C, 2), (C, 3), (D, 1), (D, 2), (E, 1), (E, 3)]]
+      possiblePlays initialBoard (A, 3) `shouldBe` sort [Play (A, 3) p | p <- [(A, 1), (C, 1), (A, 2), (B, 2), (B, 3), (C, 3), (A, 4), (B, 4), (A, 5), (C, 5)]]
 
     it "rejects play if it is not valid" $
       -- The game piece in C1 is a activist, so it can only move by
