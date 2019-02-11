@@ -1,7 +1,7 @@
 module DjambiSpec where
 
 import           Control.Monad
-import           Data.Aeson              (encode)
+import           Data.Aeson              (ToJSON, encode)
 import           Data.Functor
 import           Data.List               (sort)
 import           Data.Maybe
@@ -29,11 +29,15 @@ import           Test.QuickCheck
 spec :: Spec
 spec = describe "Djambi Game" $ do
 
-  with djambiApp $ describe "Djambi Server" $
+  with djambiApp $ describe "Djambi Server" $ do
+    let json :: (ToJSON a) => a -> ResponseMatcher
+        json = fromString . unpack . decodeUtf8 . encode
 
-    it "on GET /game returns state of the game as JSON" $ do
-      let encodedBoard = unpack $ decodeUtf8 $ encode initialBoard
-      get "/game" `shouldRespondWith` fromString encodedBoard
+    it "on GET /game returns state of the game as JSON" $
+      get "/game" `shouldRespondWith` json initialBoard
+
+    it "on GET /possible-moves returns list of valid plays for current player as JSON" $
+      get "/possible-moves" `shouldRespondWith` json (allPossibleMoves initialBoard)
 
   describe "Core Game Logic" $ do
 
@@ -77,8 +81,8 @@ spec = describe "Djambi Game" $ do
       -- C+ . .
       -- D. .
       -- E.   .
-      possiblePlays initialBoard (C, 1) `shouldBe` sort [Play (C, 1) p | p <- [(A, 1), (A, 3), (B, 1), (B, 2), (C, 2), (C, 3), (D, 1), (D, 2), (E, 1), (E, 3)]]
-      possiblePlays initialBoard (A, 3) `shouldBe` sort [Play (A, 3) p | p <- [(A, 1), (C, 1), (A, 2), (B, 2), (B, 3), (C, 3), (A, 4), (B, 4), (A, 5), (C, 5)]]
+      possibleMoves initialBoard (C, 1) `shouldBe` sort [Play (C, 1) p | p <- [(A, 1), (A, 3), (B, 1), (B, 2), (C, 2), (C, 3), (D, 1), (D, 2), (E, 1), (E, 3)]]
+      possibleMoves initialBoard (A, 3) `shouldBe` sort [Play (A, 3) p | p <- [(A, 1), (C, 1), (A, 2), (B, 2), (B, 3), (C, 3), (A, 4), (B, 4), (A, 5), (C, 5)]]
 
     it "rejects play if it is not valid" $
       -- The game piece in C1 is a activist, so it can only move by

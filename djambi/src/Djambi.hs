@@ -94,7 +94,10 @@ instance Num Index where
 type Position = (Row, Col)
 
 data Play = Play Position Position
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
+
+instance ToJSON Play
+instance FromJSON Play
 
 data DjambiError = InvalidPlay
   deriving (Eq, Show)
@@ -105,8 +108,11 @@ safeShift value shift
   | shift >  0 = guard (value /= maxBound) *> safeShift (succ value) (pred shift)
   | otherwise  = guard (value /= minBound) *> safeShift (pred value) (succ shift)
 
-possiblePlays :: Board -> Position -> [Play]
-possiblePlays b from@(x, y) = sort [Play from to | to <- militant]
+allPossibleMoves :: Board -> [Play]
+allPossibleMoves _ = []
+
+possibleMoves :: Board -> Position -> [Play]
+possibleMoves b from@(x, y) = sort [Play from to | to <- militant]
   where
     militant = catMaybes [ possibleMove from dir n | dir <- enumFromTo minBound maxBound, n <- [1,2] ]
 

@@ -8,6 +8,8 @@ copyright:           "2019 Author name here"
 
 default-extensions:
 - OverloadedStrings
+- TypeOperators
+- DataKinds
 
 extra-source-files:
 - README.md
@@ -26,6 +28,8 @@ dependencies:
 - aeson
 - base >= 4.7 && < 5
 - http-types
+- servant
+- servant-server
 - text
 - wai
 - warp
