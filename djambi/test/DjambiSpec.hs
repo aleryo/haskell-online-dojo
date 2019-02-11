@@ -1,17 +1,19 @@
 module DjambiSpec where
 
 import           Control.Monad
-import           Data.Aeson              (ToJSON, encode)
+import           Data.Aeson                (ToJSON, encode)
+import           Data.Either               (fromRight)
 import           Data.Functor
-import           Data.List               (sort)
+import           Data.List                 (sort)
 import           Data.Maybe
-import           Data.String             (fromString)
-import           Data.Text.Lazy          (unpack)
-import           Data.Text.Lazy.Encoding (decodeUtf8)
+import           Data.String               (fromString)
+import           Data.Text.Lazy            (unpack)
+import           Data.Text.Lazy.Encoding   (decodeUtf8)
 import           Djambi
 import           Djambi.Server
+import           Network.HTTP.Types.Method
 import           Test.Hspec
-import           Test.Hspec.Wai          hiding (pendingWith)
+import           Test.Hspec.Wai            hiding (pendingWith)
 import           Test.QuickCheck
 
 -- Plan
@@ -29,6 +31,8 @@ import           Test.QuickCheck
 spec :: Spec
 spec = describe "Djambi Game" $ do
 
+  let validplay = Play (C, 1) (D, 1)
+
   with djambiApp $ describe "Djambi Server" $ do
     let json :: (ToJSON a) => a -> ResponseMatcher
         json = fromString . unpack . decodeUtf8 . encode
@@ -39,9 +43,12 @@ spec = describe "Djambi Game" $ do
     it "on GET /possible-moves returns list of valid plays for current player as JSON" $
       get "/possible-moves" `shouldRespondWith` json (allPossibleMoves initialBoard)
 
-  describe "Core Game Logic" $ do
+    it "on POST /move returns updated board as JSON given move is legal" $ do
+      let move = encode validplay
+          Right updatedGame = play validplay initialGame
+      request methodPost "/move" [("content-type", "application/json")] move `shouldRespondWith` json (getBoard updatedGame)
 
-    let validplay = Play (C, 1) (D, 1)
+  describe "Core Game Logic" $ do
 
     it "returns initial board when there is no play" $
       getBoard initialGame  `shouldBe` initialBoard
@@ -83,6 +90,9 @@ spec = describe "Djambi Game" $ do
       -- E.   .
       possibleMoves initialBoard (C, 1) `shouldBe` sort [Play (C, 1) p | p <- [(A, 1), (A, 3), (B, 1), (B, 2), (C, 2), (C, 3), (D, 1), (D, 2), (E, 1), (E, 3)]]
       possibleMoves initialBoard (A, 3) `shouldBe` sort [Play (A, 3) p | p <- [(A, 1), (C, 1), (A, 2), (B, 2), (B, 3), (C, 3), (A, 4), (B, 4), (A, 5), (C, 5)]]
+
+    it "generates a list of all possible moves" $
+      allPossibleMoves initialBoard `shouldBe` sort [Play (C, 1) p | p <- [(A, 1), (A, 3), (B, 1), (B, 2), (C, 2), (C, 3), (D, 1), (D, 2), (E, 1), (E, 3)]]
 
     it "rejects play if it is not valid" $
       -- The game piece in C1 is a activist, so it can only move by

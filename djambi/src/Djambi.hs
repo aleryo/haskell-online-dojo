@@ -109,7 +109,9 @@ safeShift value shift
   | otherwise  = guard (value /= minBound) *> safeShift (pred value) (succ shift)
 
 allPossibleMoves :: Board -> [Play]
-allPossibleMoves _ = []
+allPossibleMoves b@(Board ps) = do
+  Militant _ p <- ps
+  possibleMoves b p
 
 possibleMoves :: Board -> Position -> [Play]
 possibleMoves b from@(x, y) = sort [Play from to | to <- militant]

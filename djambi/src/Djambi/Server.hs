@@ -9,6 +9,7 @@ import           Servant.Server
 
 type DjambiApi = "game" :> Get '[JSON] Board
             :<|> "possible-moves" :> Get '[JSON] [Play]
+            :<|> "move" :> ReqBody '[JSON] Play :> Post '[JSON] Board
 
 djambiApi :: Proxy DjambiApi
 djambiApi = Proxy
@@ -16,10 +17,13 @@ djambiApi = Proxy
 djambiServer :: Application
 djambiServer = serve djambiApi server
   where
-    server = handlerGame :<|> handlerMoves
+    server = handlerGame :<|> handlerMoves :<|> handlerMove
 
     handlerGame = pure initialBoard
-    handlerMoves = pure []
+    handlerMoves = pure (allPossibleMoves initialBoard)
+    handlerMove move = do
+      let result = play move initialGame
+      either (const $ throwError err500) (pure . getBoard) result
 
 djambiApp :: IO Application
 djambiApp = pure djambiServer
