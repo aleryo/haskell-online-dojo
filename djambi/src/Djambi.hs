@@ -23,8 +23,9 @@ getBoard = foldr apply initialBoard . plays
 -- assumes Play is always valid wrt Board
 -- implies apply is NOT total
 apply :: Play -> Board -> Board
-apply (Play (C, 1) to) (Board [ Militant Vert (C, 1)]) = Board [ Militant Vert to ]
-apply (Play (D, 1) to) (Board [ Militant Vert (D, 1)]) = Board [ Militant Vert to ]
+apply (Play from to) (Board [ Militant Vert from'])
+  | from == from' = Board [ Militant Vert to ]
+apply p b = error $ "don't know how to apply play " <> show p <> " board " <> show b
 
 data Board = Board [ Piece ]
   deriving (Eq, Show, Generic)

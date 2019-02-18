@@ -48,6 +48,14 @@ spec = describe "Djambi Game" $ do
           Right updatedGame = play validplay initialGame
       request methodPost "/move" [("content-type", "application/json")] move `shouldRespondWith` json (getBoard updatedGame)
 
+    it "on POST a second /move returns updated board" $ do
+      let firstMove = encode validplay
+          secondPlay = Play (D, 1) (D, 2)
+          secondMove = encode secondPlay
+          Right updatedGame = play validplay initialGame >>= play secondPlay
+      request methodPost "/move" [("content-type", "application/json")] firstMove
+      request methodPost "/move" [("content-type", "application/json")] secondMove `shouldRespondWith` json (getBoard updatedGame)
+
   describe "Core Game Logic" $ do
 
     it "returns initial board when there is no play" $

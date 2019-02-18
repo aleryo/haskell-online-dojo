@@ -29,6 +29,7 @@ dependencies:
 - aeson
 - base >= 4.7 && < 5
 - http-types
+- mtl
 - servant
 - servant-server
 - text
