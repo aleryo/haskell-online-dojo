@@ -100,7 +100,7 @@ data Play = Play Position Position
 instance ToJSON Play
 instance FromJSON Play
 
-data DjambiError = InvalidPlay
+data DjambiError = InvalidPlay Play
   deriving (Eq, Show)
 
 safeShift :: (Bounded a, Ord a, Enum a) => a -> Integer -> Maybe a
@@ -134,4 +134,5 @@ possibleMove p      NE n    = foldM (\pos dir -> possibleMove pos dir n) p [East
 possibleMove p      NW n    = foldM (\pos dir -> possibleMove pos dir n) p [West, North]
 
 play :: Play -> Game -> Either DjambiError Game
-play p (Game ps) = Right $ Game $ p:ps
+play p@(Play from to) g@(Game ps) | p `elem` possibleMoves (getBoard g) from = Right $ Game $ p:ps
+                                  | otherwise = Left (InvalidPlay p)

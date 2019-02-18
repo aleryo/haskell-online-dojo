@@ -18,20 +18,26 @@ import           Test.QuickCheck
 
 -- Plan
 --
---  1. setup basic types for (pure) game logic
+--  1. [x] setup basic types for (pure) game logic
 --     - get current Game
 --     - get possible plays :: Game -> [ Play ]
 --     - apply a Play on a Game
 --     1.1 list possible plays
 --       - use same type for rows and cols
---  2. scaffold HTTP server to serve JSON
---  3. provide HTML Content type
---
+--  2. [x] scaffold HTTP server to serve JSON
+--  3. handle logical errors
+--  4. enrich game play
+--     a. more pieces: Necromobile, Journaliste, Provocateur, Assassin, Chef
+--     b. kill a piece
+--     c. end game
+--  4. plug https://github.com/berewt/J2S to get an AI opponent
+--  5. provide HTML Content type
 
 spec :: Spec
 spec = describe "Djambi Game" $ do
 
   let validplay = Play (C, 1) (D, 1)
+      invalidPlay = Play (C,1) (D, 3)
 
   with djambiApp $ describe "Djambi Server" $ do
     let json :: (ToJSON a) => a -> ResponseMatcher
@@ -55,6 +61,11 @@ spec = describe "Djambi Game" $ do
           Right updatedGame = play validplay initialGame >>= play secondPlay
       request methodPost "/move" [("content-type", "application/json")] firstMove
       request methodPost "/move" [("content-type", "application/json")] secondMove `shouldRespondWith` json (getBoard updatedGame)
+
+    it "on POST /move returns error 400 given move is invalid" $ do
+      let move = encode invalidPlay
+      request methodPost "/move" [("content-type", "application/json")] move `shouldRespondWith` 400
+
 
   describe "Core Game Logic" $ do
 
@@ -102,11 +113,11 @@ spec = describe "Djambi Game" $ do
     it "generates a list of all possible moves" $
       allPossibleMoves initialBoard `shouldBe` sort [Play (C, 1) p | p <- [(A, 1), (A, 3), (B, 1), (B, 2), (C, 2), (C, 3), (D, 1), (D, 2), (E, 1), (E, 3)]]
 
-    it "rejects play if it is not valid" $
+    it "rejects play if it is not valid" $ do
       -- The game piece in C1 is a activist, so it can only move by
       -- one or two steps horizontally, vertically or diagonally,
       -- making this move invalid
-      pendingWith "play (Play (C,1) (D, 3)) initialGame  `shouldBe` Left InvalidPlay"
+      play invalidPlay initialGame  `shouldBe` Left (InvalidPlay invalidPlay)
 
     -- it "returns updated board when there is one play" $ do
     --   getBoard (play validplay initialGame) `shouldBe` Board [ Militant Vert (D, 1) ]

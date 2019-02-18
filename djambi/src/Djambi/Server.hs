@@ -32,7 +32,7 @@ djambiServer gameRef = serve djambiApi server
           updateGameAndReturn game = liftIO $ do
             writeIORef gameRef game
             pure $ getBoard game
-      either (const $ throwError err500) updateGameAndReturn result
+      either (const $ throwError err400) updateGameAndReturn result
 
 djambiApp :: IO Application
 djambiApp = newIORef initialGame >>= pure . djambiServer
