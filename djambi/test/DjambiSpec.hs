@@ -25,19 +25,20 @@ import           Test.QuickCheck
 --     1.1 list possible plays
 --       - use same type for rows and cols
 --  2. [x] scaffold HTTP server to serve JSON
---  3. handle logical errors
+--  3. [x] handle logical errors
 --  4. enrich game play
+--     a'. add one player to handle game turn
 --     a. more pieces: Necromobile, Journaliste, Provocateur, Assassin, Chef
 --     b. kill a piece
 --     c. end game
 --  4. plug https://github.com/berewt/J2S to get an AI opponent
 --  5. provide HTML Content type
 
+validplay = Play Vert (C, 1) (D, 1)
+invalidPlay = Play Vert (C,1) (D, 3)
+
 spec :: Spec
 spec = describe "Djambi Game" $ do
-
-  let validplay = Play (C, 1) (D, 1)
-      invalidPlay = Play (C,1) (D, 3)
 
   with djambiApp $ describe "Djambi Server" $ do
     let json :: (ToJSON a) => a -> ResponseMatcher
@@ -47,7 +48,7 @@ spec = describe "Djambi Game" $ do
       get "/game" `shouldRespondWith` json initialBoard
 
     it "on GET /possible-moves returns list of valid plays for current player as JSON" $
-      get "/possible-moves" `shouldRespondWith` json (allPossibleMoves initialBoard)
+      get "/possible-moves" `shouldRespondWith` json (allPossibleMoves initialGame)
 
     it "on POST /move returns updated board as JSON given move is legal" $ do
       let move = encode validplay
@@ -56,7 +57,7 @@ spec = describe "Djambi Game" $ do
 
     it "on POST a second /move returns updated board" $ do
       let firstMove = encode validplay
-          secondPlay = Play (D, 1) (D, 2)
+          secondPlay = Play Vert (D, 1) (D, 2)
           secondMove = encode secondPlay
           Right updatedGame = play validplay initialGame >>= play secondPlay
       request methodPost "/move" [("content-type", "application/json")] firstMove
@@ -65,7 +66,6 @@ spec = describe "Djambi Game" $ do
     it "on POST /move returns error 400 given move is invalid" $ do
       let move = encode invalidPlay
       request methodPost "/move" [("content-type", "application/json")] move `shouldRespondWith` 400
-
 
   describe "Core Game Logic" $ do
 
@@ -107,21 +107,25 @@ spec = describe "Djambi Game" $ do
       -- C+ . .
       -- D. .
       -- E.   .
-      possibleMoves initialBoard (C, 1) `shouldBe` sort [Play (C, 1) p | p <- [(A, 1), (A, 3), (B, 1), (B, 2), (C, 2), (C, 3), (D, 1), (D, 2), (E, 1), (E, 3)]]
-      possibleMoves initialBoard (A, 3) `shouldBe` sort [Play (A, 3) p | p <- [(A, 1), (C, 1), (A, 2), (B, 2), (B, 3), (C, 3), (A, 4), (B, 4), (A, 5), (C, 5)]]
+      possibleMoves initialBoard (C, 1) `shouldBe` sort [Play Vert (C, 1) p | p <- [(A, 1), (A, 3), (B, 1), (B, 2), (C, 2), (C, 3), (D, 1), (D, 2), (E, 1), (E, 3)]]
+      possibleMoves initialBoard (A, 3) `shouldBe` sort [Play Vert (A, 3) p | p <- [(A, 1), (C, 1), (A, 2), (B, 2), (B, 3), (C, 3), (A, 4), (B, 4), (A, 5), (C, 5)]]
 
     it "generates a list of all possible moves" $
-      allPossibleMoves initialBoard `shouldBe` sort [Play (C, 1) p | p <- [(A, 1), (A, 3), (B, 1), (B, 2), (C, 2), (C, 3), (D, 1), (D, 2), (E, 1), (E, 3)]]
+      allPossibleMoves initialGame `shouldBe` sort [Play Vert (C, 1) p | p <- [(A, 1), (A, 3), (B, 1), (B, 2), (C, 2), (C, 3), (D, 1), (D, 2), (E, 1), (E, 3)]]
 
-    it "rejects play if it is not valid" $ do
+    it "rejects play if it is not valid" $
       -- The game piece in C1 is a activist, so it can only move by
       -- one or two steps horizontally, vertically or diagonally,
       -- making this move invalid
       play invalidPlay initialGame  `shouldBe` Left (InvalidPlay invalidPlay)
 
-    -- it "returns updated board when there is one play" $ do
-    --   getBoard (play validplay initialGame) `shouldBe` Board [ Militant Vert (D, 1) ]
-    --   getBoard (play (Play (C, 1) (D, 2)) initialGame) `shouldBe` Board [ Militant Vert (D, 2) ]
+    it "returns updated board when there are 2 plays" $
+      pendingWith "getBoard <$> (play (Play Rouge (A, 7) (A, 6)) =<< play validplay initialGame) `shouldBe` Right (Board [ Militant Vert (D, 2) ])"
 
-    -- it "returns updated board when there are 2 plays" $
-    --   getBoard (play (Play (D,1) (D,2)) (play validplay initialGame)) `shouldBe` Board [ Militant Vert (D, 2) ]
+    describe "Next Player Logic" $ do
+
+      it "gives Vert as next player when starting game" $ do
+        getNextPlayer initialGame `shouldBe` Vert
+
+      it "gives Rouge after a valid play" $ do
+        getNextPlayer <$> (play validplay initialGame) `shouldBe` Right Rouge

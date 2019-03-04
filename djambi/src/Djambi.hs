@@ -11,8 +11,12 @@ import           Data.List     (sort)
 import           Data.Maybe
 import           GHC.Generics
 
-data Game = Game { plays :: [ Play ] }
+data Game = Game { plays          :: [ Play ] }
   deriving (Eq, Show)
+
+getNextPlayer :: Game -> Party
+getNextPlayer (Game []) = Vert
+getNextPlayer _         = Rouge
 
 initialGame :: Game
 initialGame = Game []
@@ -23,8 +27,8 @@ getBoard = foldr apply initialBoard . plays
 -- assumes Play is always valid wrt Board
 -- implies apply is NOT total
 apply :: Play -> Board -> Board
-apply (Play from to) (Board [ Militant Vert from'])
-  | from == from' = Board [ Militant Vert to ]
+apply (Play _ from to) (Board [ Militant Vert from', Militant Rouge (A, 7)])
+  | from == from' = Board [ Militant Vert to, Militant Rouge (A, 7) ]
 apply p b = error $ "don't know how to apply play " <> show p <> " board " <> show b
 
 data Board = Board [ Piece ]
@@ -34,7 +38,7 @@ instance ToJSON Board
 instance FromJSON Board
 
 initialBoard :: Board
-initialBoard = Board [ Militant Vert (C, 1) ]
+initialBoard = Board [ Militant Vert (C, 1), Militant Rouge (A, 7) ]
 
 data Piece = Militant Party Position
   deriving (Eq, Show, Generic)
@@ -43,7 +47,7 @@ instance ToJSON Piece
 instance FromJSON Piece
 
 data Party = Vert | Rouge
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Ord, Show, Generic)
 
 instance ToJSON Party
 instance FromJSON Party
@@ -94,7 +98,7 @@ instance Num Index where
 
 type Position = (Row, Col)
 
-data Play = Play Position Position
+data Play = Play Party Position Position
   deriving (Eq, Ord, Show, Generic)
 
 instance ToJSON Play
@@ -109,13 +113,15 @@ safeShift value shift
   | shift >  0 = guard (value /= maxBound) *> safeShift (succ value) (pred shift)
   | otherwise  = guard (value /= minBound) *> safeShift (pred value) (succ shift)
 
-allPossibleMoves :: Board -> [Play]
-allPossibleMoves b@(Board ps) = do
-  Militant _ p <- ps
+allPossibleMoves :: Game -> [Play]
+allPossibleMoves game = do
+  let b@(Board ps) = getBoard game
+  let party = getNextPlayer game
+  Militant _ p <- filter (\ (Militant party' _) -> party == party') ps
   possibleMoves b p
 
 possibleMoves :: Board -> Position -> [Play]
-possibleMoves b from@(x, y) = sort [Play from to | to <- militant]
+possibleMoves b from@(x, y) = sort [Play Vert from to | to <- militant]
   where
     militant = catMaybes [ possibleMove from dir n | dir <- enumFromTo minBound maxBound, n <- [1,2] ]
 
@@ -134,5 +140,5 @@ possibleMove p      NE n    = foldM (\pos dir -> possibleMove pos dir n) p [East
 possibleMove p      NW n    = foldM (\pos dir -> possibleMove pos dir n) p [West, North]
 
 play :: Play -> Game -> Either DjambiError Game
-play p@(Play from to) g@(Game ps) | p `elem` possibleMoves (getBoard g) from = Right $ Game $ p:ps
-                                  | otherwise = Left (InvalidPlay p)
+play p@(Play _ from to) g@(Game ps) | p `elem` possibleMoves (getBoard g) from = Right $ Game $ p:ps
+                                    | otherwise = Left (InvalidPlay p)
