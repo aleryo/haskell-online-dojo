@@ -15,8 +15,8 @@ data Game = Game { plays          :: [ Play ] }
   deriving (Eq, Show)
 
 getNextPlayer :: Game -> Party
-getNextPlayer (Game []) = Vert
-getNextPlayer _         = Rouge
+getNextPlayer (Game [])                   = Vert
+getNextPlayer (Game (Play party _ _ : _)) = succ party
 
 initialGame :: Game
 initialGame = Game []
@@ -26,8 +26,7 @@ getBoard = foldr apply initialBoard . plays
 
 -- assumes Play is always valid wrt Board
 apply :: Play -> Board -> Board
-apply (Play _ from to) (Board ps)
-  = Board (movePiece <$> ps)
+apply (Play _ from to) (Board ps) = Board $ movePiece <$> ps
   where
     movePiece m@(Militant party from')
           | from == from' = Militant party to
@@ -40,7 +39,7 @@ instance ToJSON Board
 instance FromJSON Board
 
 initialBoard :: Board
-initialBoard = Board [ Militant Vert (C, 1), Militant Rouge (A, 7) ]
+initialBoard = Board [ Militant Vert (C, 1), Militant Rouge (A, 7), Militant Bleu (G, 7) ]
 
 data Piece = Militant Party Position
   deriving (Eq, Show, Generic)
@@ -48,8 +47,8 @@ data Piece = Militant Party Position
 instance ToJSON Piece
 instance FromJSON Piece
 
-data Party = Vert | Rouge
-  deriving (Eq, Ord, Show, Generic)
+data Party = Vert | Rouge | Bleu | Jaune
+  deriving (Eq, Enum, Ord, Show, Generic)
 
 instance ToJSON Party
 instance FromJSON Party
