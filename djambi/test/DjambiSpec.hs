@@ -57,7 +57,7 @@ spec = describe "Djambi Game" $ do
 
     it "on POST a second /move returns updated board" $ do
       let firstMove = encode validplay
-          secondPlay = Play Vert (D, 1) (D, 2)
+          secondPlay = Play Rouge (A, 7) (A, 6)
           secondMove = encode secondPlay
           Right updatedGame = play validplay initialGame >>= play secondPlay
       request methodPost "/move" [("content-type", "application/json")] firstMove
@@ -107,8 +107,8 @@ spec = describe "Djambi Game" $ do
       -- C+ . .
       -- D. .
       -- E.   .
-      possibleMoves initialBoard (C, 1) `shouldBe` sort [Play Vert (C, 1) p | p <- [(A, 1), (A, 3), (B, 1), (B, 2), (C, 2), (C, 3), (D, 1), (D, 2), (E, 1), (E, 3)]]
-      possibleMoves initialBoard (A, 3) `shouldBe` sort [Play Vert (A, 3) p | p <- [(A, 1), (C, 1), (A, 2), (B, 2), (B, 3), (C, 3), (A, 4), (B, 4), (A, 5), (C, 5)]]
+      possibleMoves initialBoard Vert (C, 1) `shouldBe` sort [Play Vert (C, 1) p | p <- [(A, 1), (A, 3), (B, 1), (B, 2), (C, 2), (C, 3), (D, 1), (D, 2), (E, 1), (E, 3)]]
+      possibleMoves initialBoard Vert (A, 3) `shouldBe` sort [Play Vert (A, 3) p | p <- [(A, 1), (C, 1), (A, 2), (B, 2), (B, 3), (C, 3), (A, 4), (B, 4), (A, 5), (C, 5)]]
 
     it "generates a list of all possible moves" $
       allPossibleMoves initialGame `shouldBe` sort [Play Vert (C, 1) p | p <- [(A, 1), (A, 3), (B, 1), (B, 2), (C, 2), (C, 3), (D, 1), (D, 2), (E, 1), (E, 3)]]
@@ -120,7 +120,7 @@ spec = describe "Djambi Game" $ do
       play invalidPlay initialGame  `shouldBe` Left (InvalidPlay invalidPlay)
 
     it "returns updated board when there are 2 plays" $
-      pendingWith "getBoard <$> (play (Play Rouge (A, 7) (A, 6)) =<< play validplay initialGame) `shouldBe` Right (Board [ Militant Vert (D, 2) ])"
+      getBoard <$> (play (Play Rouge (A, 7) (A, 6)) =<< play validplay initialGame) `shouldBe` Right (Board [ Militant Vert (D, 1), Militant Rouge (A,6) ])
 
     describe "Next Player Logic" $ do
 

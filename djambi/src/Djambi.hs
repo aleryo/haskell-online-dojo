@@ -27,8 +27,9 @@ getBoard = foldr apply initialBoard . plays
 -- assumes Play is always valid wrt Board
 -- implies apply is NOT total
 apply :: Play -> Board -> Board
-apply (Play _ from to) (Board [ Militant Vert from', Militant Rouge (A, 7)])
-  | from == from' = Board [ Militant Vert to, Militant Rouge (A, 7) ]
+apply (Play _ from to) (Board [ Militant Vert from', Militant Rouge from''])
+  | from == from' = Board [ Militant Vert to, Militant Rouge from'' ]
+  | from == from'' = Board [ Militant Vert from', Militant Rouge to ]
 apply p b = error $ "don't know how to apply play " <> show p <> " board " <> show b
 
 data Board = Board [ Piece ]
@@ -118,10 +119,10 @@ allPossibleMoves game = do
   let b@(Board ps) = getBoard game
   let party = getNextPlayer game
   Militant _ p <- filter (\ (Militant party' _) -> party == party') ps
-  possibleMoves b p
+  possibleMoves b party p
 
-possibleMoves :: Board -> Position -> [Play]
-possibleMoves b from@(x, y) = sort [Play Vert from to | to <- militant]
+possibleMoves :: Board -> Party -> Position -> [Play]
+possibleMoves b party from@(x, y) = sort [Play party from to | to <- militant]
   where
     militant = catMaybes [ possibleMove from dir n | dir <- enumFromTo minBound maxBound, n <- [1,2] ]
 
@@ -140,5 +141,5 @@ possibleMove p      NE n    = foldM (\pos dir -> possibleMove pos dir n) p [East
 possibleMove p      NW n    = foldM (\pos dir -> possibleMove pos dir n) p [West, North]
 
 play :: Play -> Game -> Either DjambiError Game
-play p@(Play _ from to) g@(Game ps) | p `elem` possibleMoves (getBoard g) from = Right $ Game $ p:ps
+play p@(Play _ from to) g@(Game ps) | p `elem` allPossibleMoves g = Right $ Game $ p:ps
                                     | otherwise = Left (InvalidPlay p)
