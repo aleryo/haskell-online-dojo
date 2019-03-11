@@ -25,12 +25,13 @@ getBoard :: Game -> Board
 getBoard = foldr apply initialBoard . plays
 
 -- assumes Play is always valid wrt Board
--- implies apply is NOT total
 apply :: Play -> Board -> Board
-apply (Play _ from to) (Board [ Militant Vert from', Militant Rouge from''])
-  | from == from' = Board [ Militant Vert to, Militant Rouge from'' ]
-  | from == from'' = Board [ Militant Vert from', Militant Rouge to ]
-apply p b = error $ "don't know how to apply play " <> show p <> " board " <> show b
+apply (Play _ from to) (Board ps)
+  = Board (movePiece <$> ps)
+  where
+    movePiece m@(Militant party from')
+          | from == from' = Militant party to
+          | otherwise     = m
 
 data Board = Board [ Piece ]
   deriving (Eq, Show, Generic)
