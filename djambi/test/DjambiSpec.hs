@@ -78,27 +78,27 @@ spec = describe "Djambi Game" $ do
 
     describe "Coordinates computation" $ do
       it "can compute abstract movement of a piece horizontally" $ do
-          possibleMove (C, 1) East 1 `shouldBe` Just (C, 2)
-          possibleMove (C, 2) East 1 `shouldBe` Just (C, 3)
-          possibleMove (C, 2) East 1 `shouldBe` Just (C, 3)
-          possibleMove (C, 9) East 1 `shouldBe` Nothing
-          possibleMove (C, 9) West 1 `shouldBe` Just (C, 8)
-          possibleMove (D, 7) West 1 `shouldBe` Just (D, 6)
-          possibleMove (D, 7) East 1 `shouldBe` Just (D, 8)
+          possibleMove (C, 1) East 1 `shouldBe` pure (C, 2)
+          possibleMove (C, 2) East 1 `shouldBe` pure (C, 3)
+          possibleMove (C, 2) East 1 `shouldBe` pure (C, 3)
+          possibleMove (C, 9) East 1 `shouldBe` mempty
+          possibleMove (C, 9) West 1 `shouldBe` pure (C, 8)
+          possibleMove (D, 7) West 1 `shouldBe` pure (D, 6)
+          possibleMove (D, 7) East 1 `shouldBe` pure (D, 8)
 
       it "can compute abstract movement of a piece vertically" $ do
-          possibleMove (C, 1) South 1 `shouldBe` Just (D, 1)
-          possibleMove (I, 1) South 1 `shouldBe` Nothing
-          possibleMove (C, 1) North 1 `shouldBe` Just (B, 1)
-          possibleMove (A, 1) North 1 `shouldBe` Nothing
-          possibleMove (C, 3) North 1 `shouldBe` Just (B, 3)
-          possibleMove (C, 3) South 1 `shouldBe` Just (D, 3)
+          possibleMove (C, 1) South 1 `shouldBe` pure (D, 1)
+          possibleMove (I, 1) South 1 `shouldBe` mempty
+          possibleMove (C, 1) North 1 `shouldBe` pure (B, 1)
+          possibleMove (A, 1) North 1 `shouldBe` mempty
+          possibleMove (C, 3) North 1 `shouldBe` pure (B, 3)
+          possibleMove (C, 3) South 1 `shouldBe` pure (D, 3)
 
       it "can compute abstract movement of a piece diagonally" $ do
-          possibleMove (C, 1) SE 1 `shouldBe` Just (D, 2)
-          possibleMove (C, 2) SW 1 `shouldBe` Just (D, 1)
-          possibleMove (C, 1) NE 1 `shouldBe` Just (B, 2)
-          possibleMove (C, 2) NW 1 `shouldBe` Just (B, 1)
+          possibleMove (C, 1) SE 1 `shouldBe` pure (D, 2)
+          possibleMove (C, 2) SW 1 `shouldBe` pure (D, 1)
+          possibleMove (C, 1) NE 1 `shouldBe` pure (B, 2)
+          possibleMove (C, 2) NW 1 `shouldBe` pure (B, 1)
 
     it "generates a list of possible plays for militant" $ do
       --  1 2 3
@@ -107,11 +107,18 @@ spec = describe "Djambi Game" $ do
       -- C+ . .
       -- D. .
       -- E.   .
-      possibleMoves initialBoard Vert (C, 1) `shouldBe` sort [Play Vert (C, 1) p | p <- [(A, 1), (A, 3), (B, 1), (B, 2), (C, 2), (C, 3), (D, 1), (D, 2), (E, 1), (E, 3)]]
-      possibleMoves initialBoard Vert (A, 3) `shouldBe` sort [Play Vert (A, 3) p | p <- [(A, 1), (C, 1), (A, 2), (B, 2), (B, 3), (C, 3), (A, 4), (B, 4), (A, 5), (C, 5)]]
+      possibleMoves initialBoard Vert (C, 1)
+        `shouldBe` sort [Play Vert (C, 1) p | p <- [(D, 1), (D, 2), (E, 1), (E, 3)]]
 
-    it "generates a list of all possible moves" $
-      allPossibleMoves initialGame `shouldBe` sort [Play Vert (C, 1) p | p <- [(A, 1), (A, 3), (B, 1), (B, 2), (C, 2), (C, 3), (D, 1), (D, 2), (E, 1), (E, 3)]]
+      possibleMoves initialBoard Vert (A, 3)
+        `shouldBe` sort [Play Vert (A, 3) p | p <- [(A, 4), (B, 4), (A, 5), (C, 5)]]
+
+      possibleMoves initialBoard Vert (B, 1) `shouldBe` []
+
+    it "generates a list of all possible moves" $ do
+      allPossibleMoves initialGame `shouldContain` possibleMoves initialBoard Vert (C,1)
+      allPossibleMoves initialGame `shouldContain` possibleMoves initialBoard Vert (C,2)
+      allPossibleMoves initialGame `shouldNotContain` possibleMoves initialBoard Vert (B,1)
 
     it "rejects play if it is not valid" $
       -- The game piece in C1 is a activist, so it can only move by
@@ -120,8 +127,8 @@ spec = describe "Djambi Game" $ do
       play invalidPlay initialGame  `shouldBe` Left (InvalidPlay invalidPlay)
 
     it "returns updated board when there are 2 plays" $
-      getBoard <$> (play (Play Rouge (A, 7) (A, 6)) =<< play validplay initialGame)
-        `shouldBe` Right (Board [ Militant Vert (D, 1), Militant Rouge (A,6), Militant Bleu (G, 7) , Militant Jaune (G, 2) ])
+      getBoardFrom (Board [Militant Vert (C,1), Militant Rouge (A,7)]) <$> (play (Play Rouge (A, 7) (A, 6)) =<< play validplay initialGame)
+        `shouldBe` Right (Board [ Militant Vert (D,1), Militant Rouge (A,6) ])
 
     describe "Next Player Logic" $ do
 
