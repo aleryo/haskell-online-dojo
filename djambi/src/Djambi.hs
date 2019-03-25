@@ -16,7 +16,8 @@ data Game = Game { plays          :: [ Play ] }
 
 getNextPlayer :: Game -> Party
 getNextPlayer (Game [])                   = Vert
-getNextPlayer (Game (Play party _ _ : _)) = succ party
+getNextPlayer (Game (Play Jaune _ _ : _)) = Vert
+getNextPlayer (Game (Play play _ _ : _))  = succ play
 
 initialGame :: Game
 initialGame = Game []
@@ -39,7 +40,11 @@ instance ToJSON Board
 instance FromJSON Board
 
 initialBoard :: Board
-initialBoard = Board [ Militant Vert (C, 1), Militant Rouge (A, 7), Militant Bleu (G, 7) ]
+initialBoard = Board [ Militant Vert (C, 1)
+                     , Militant Rouge (A, 7)
+                     , Militant Bleu (G, 7)
+                     , Militant Jaune (G, 2)
+                     ]
 
 data Piece = Militant Party Position
   deriving (Eq, Show, Generic)

@@ -120,7 +120,8 @@ spec = describe "Djambi Game" $ do
       play invalidPlay initialGame  `shouldBe` Left (InvalidPlay invalidPlay)
 
     it "returns updated board when there are 2 plays" $
-      getBoard <$> (play (Play Rouge (A, 7) (A, 6)) =<< play validplay initialGame) `shouldBe` Right (Board [ Militant Vert (D, 1), Militant Rouge (A,6), Militant Bleu (G, 7) ])
+      getBoard <$> (play (Play Rouge (A, 7) (A, 6)) =<< play validplay initialGame)
+        `shouldBe` Right (Board [ Militant Vert (D, 1), Militant Rouge (A,6), Militant Bleu (G, 7) , Militant Jaune (G, 2) ])
 
     describe "Next Player Logic" $ do
 
@@ -139,4 +140,8 @@ spec = describe "Djambi Game" $ do
       it "gives Jaune after a valid play by Bleu" $ do
          let threePlays = foldM (flip play) initialGame [validplay, Play Rouge (A, 7) (A, 6), Play Bleu (G, 7) (F, 6)]
          getNextPlayer <$> threePlays `shouldBe` Right Jaune
+
+      it "gives Vert after a valid play by Jaune" $ do
+         let fourPlays = foldM (flip play) initialGame [validplay, Play Rouge (A, 7) (A, 6), Play Bleu (G, 7) (F, 6), Play Jaune (G, 2) (F, 2)]
+         getNextPlayer <$> fourPlays `shouldBe` Right Vert
 
