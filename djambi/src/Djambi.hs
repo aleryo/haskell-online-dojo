@@ -2,12 +2,14 @@
 {-# LANGUAGE DerivingStrategies         #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TupleSections              #-}
+
 module Djambi where
 
 import           Control.Monad
 import           Data.Aeson    (FromJSON, ToJSON)
 import           Data.Function (on)
-import           Data.List     (sort)
+import           Data.List     (sort, unfoldr)
 import           Data.Maybe
 import           Data.Ord      (comparing)
 import           GHC.Generics
@@ -128,7 +130,7 @@ instance FromJSON Play
 data DjambiError = InvalidPlay Play
   deriving (Eq, Show)
 
-safeShift :: (Bounded a, Ord a, Enum a) => a -> Integer -> [a]
+safeShift :: (Bounded a, Ord a, Enum a) => a -> Integer -> Maybe a
 safeShift value shift
   | shift == 0 = pure value
   | shift >  0 = guard (value /= maxBound) *> safeShift (succ value) (pred shift)
@@ -152,22 +154,21 @@ data Direction = East | South | West | North
   deriving (Eq, Show, Enum, Bounded)
 
 possibleMove ::  Board -> Position -> Direction -> Integer -> [ Position ]
-possibleMove _ _ _ 0 = []
-possibleMove b p d n =
-  case nextStep of
-    []     -> []
-    [next] -> next : possibleMove b next d (n - 1)
-  where nextStep = mfilter (not . isOccupied b) (moveOnePosition p d)
+possibleMove b position d steps = unfoldr (uncurry nextStep) (position,steps)
+  where nextStep _ 0 = Nothing
+        nextStep p n = do
+          pos <- mfilter (not . isOccupied b) (moveOnePosition p d)
+          pure (pos, (pos, n - 1))
 
-moveOnePosition :: Position -> Direction -> [Position]
+moveOnePosition :: Position -> Direction -> Maybe Position
 moveOnePosition (l, c) East  = (\c' -> (l, c')) <$> safeShift c 1
-moveOnePosition (l, c) West   = (\c' -> (l, c')) <$> safeShift c (- 1)
+moveOnePosition (l, c) West  = (\c' -> (l, c')) <$> safeShift c (- 1)
 moveOnePosition (l, c) South = (\l' -> (l', c)) <$> safeShift l 1
-moveOnePosition (l, c) North  = (\l' -> (l', c)) <$> safeShift l (- 1)
-moveOnePosition p      SE     = foldM (\pos dir -> moveOnePosition pos dir) p [East, South]
-moveOnePosition p      SW     = foldM (\pos dir -> moveOnePosition pos dir) p [West, South]
+moveOnePosition (l, c) North = (\l' -> (l', c)) <$> safeShift l (- 1)
+moveOnePosition p      SE    = foldM (\pos dir -> moveOnePosition pos dir) p [East, South]
+moveOnePosition p      SW    = foldM (\pos dir -> moveOnePosition pos dir) p [West, South]
 moveOnePosition p      NE    = foldM (\pos dir -> moveOnePosition pos dir) p [East, North]
-moveOnePosition p      NW     = foldM (\pos dir -> moveOnePosition pos dir) p [West, North]
+moveOnePosition p      NW    = foldM (\pos dir -> moveOnePosition pos dir) p [West, North]
 
 play :: Play -> Game -> Either DjambiError Game
 play p@(Play _ from to) g@(Game ps) | p `elem` allPossibleMoves g = Right $ Game $ p:ps

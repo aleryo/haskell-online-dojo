@@ -81,16 +81,16 @@ spec = describe "Djambi Game" $ do
           moveOnePosition (C, 1) East  `shouldBe` pure (C, 2)
           moveOnePosition (C, 2) East  `shouldBe` pure (C, 3)
           moveOnePosition (C, 2) East  `shouldBe` pure (C, 3)
-          moveOnePosition (C, 9) East  `shouldBe` mempty
+          moveOnePosition (C, 9) East  `shouldBe` Nothing
           moveOnePosition (C, 9) West  `shouldBe` pure (C, 8)
           moveOnePosition (D, 7) West  `shouldBe` pure (D, 6)
           moveOnePosition (D, 7) East  `shouldBe` pure (D, 8)
 
       it "can compute abstract movement of a piece vertically" $ do
           moveOnePosition (C, 1) South  `shouldBe` pure (D, 1)
-          moveOnePosition (I, 1) South  `shouldBe` mempty
+          moveOnePosition (I, 1) South  `shouldBe` Nothing
           moveOnePosition (C, 1) North  `shouldBe` pure (B, 1)
-          moveOnePosition (A, 1) North `shouldBe` mempty
+          moveOnePosition (A, 1) North `shouldBe` Nothing
           moveOnePosition (C, 3) North  `shouldBe` pure (B, 3)
           moveOnePosition (C, 3) South  `shouldBe` pure (D, 3)
 
