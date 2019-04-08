@@ -78,27 +78,27 @@ spec = describe "Djambi Game" $ do
 
     describe "Coordinates computation" $ do
       it "can compute abstract movement of a piece horizontally" $ do
-          possibleMove (C, 1) East 1 `shouldBe` pure (C, 2)
-          possibleMove (C, 2) East 1 `shouldBe` pure (C, 3)
-          possibleMove (C, 2) East 1 `shouldBe` pure (C, 3)
-          possibleMove (C, 9) East 1 `shouldBe` mempty
-          possibleMove (C, 9) West 1 `shouldBe` pure (C, 8)
-          possibleMove (D, 7) West 1 `shouldBe` pure (D, 6)
-          possibleMove (D, 7) East 1 `shouldBe` pure (D, 8)
+          moveOnePosition (C, 1) East  `shouldBe` pure (C, 2)
+          moveOnePosition (C, 2) East  `shouldBe` pure (C, 3)
+          moveOnePosition (C, 2) East  `shouldBe` pure (C, 3)
+          moveOnePosition (C, 9) East  `shouldBe` mempty
+          moveOnePosition (C, 9) West  `shouldBe` pure (C, 8)
+          moveOnePosition (D, 7) West  `shouldBe` pure (D, 6)
+          moveOnePosition (D, 7) East  `shouldBe` pure (D, 8)
 
       it "can compute abstract movement of a piece vertically" $ do
-          possibleMove (C, 1) South 1 `shouldBe` pure (D, 1)
-          possibleMove (I, 1) South 1 `shouldBe` mempty
-          possibleMove (C, 1) North 1 `shouldBe` pure (B, 1)
-          possibleMove (A, 1) North 1 `shouldBe` mempty
-          possibleMove (C, 3) North 1 `shouldBe` pure (B, 3)
-          possibleMove (C, 3) South 1 `shouldBe` pure (D, 3)
+          moveOnePosition (C, 1) South  `shouldBe` pure (D, 1)
+          moveOnePosition (I, 1) South  `shouldBe` mempty
+          moveOnePosition (C, 1) North  `shouldBe` pure (B, 1)
+          moveOnePosition (A, 1) North `shouldBe` mempty
+          moveOnePosition (C, 3) North  `shouldBe` pure (B, 3)
+          moveOnePosition (C, 3) South  `shouldBe` pure (D, 3)
 
       it "can compute abstract movement of a piece diagonally" $ do
-          possibleMove (C, 1) SE 1 `shouldBe` pure (D, 2)
-          possibleMove (C, 2) SW 1 `shouldBe` pure (D, 1)
-          possibleMove (C, 1) NE 1 `shouldBe` pure (B, 2)
-          possibleMove (C, 2) NW 1 `shouldBe` pure (B, 1)
+          moveOnePosition (C, 1) SE  `shouldBe` pure (D, 2)
+          moveOnePosition (C, 2) SW  `shouldBe` pure (D, 1)
+          moveOnePosition (C, 1) NE  `shouldBe` pure (B, 2)
+          moveOnePosition (C, 2) NW  `shouldBe` pure (B, 1)
 
     it "generates a list of possible plays for militant" $ do
       --  1 2 3
@@ -118,7 +118,6 @@ spec = describe "Djambi Game" $ do
     it "generates a list of all possible moves" $ do
       allPossibleMoves initialGame `shouldContain` possibleMoves initialBoard Vert (C,1)
       allPossibleMoves initialGame `shouldContain` possibleMoves initialBoard Vert (C,2)
-      allPossibleMoves initialGame `shouldNotContain` possibleMoves initialBoard Vert (B,1)
 
     it "rejects play if it is not valid" $
       -- The game piece in C1 is a activist, so it can only move by

@@ -12,7 +12,7 @@ import           Data.Maybe
 import           Data.Ord      (comparing)
 import           GHC.Generics
 
-data Game = Game { plays          :: [ Play ] }
+data Game = Game { plays :: [ Play ] }
   deriving (Eq, Show)
 
 getNextPlayer :: Game -> Party
@@ -57,6 +57,9 @@ initialBoard = Board [ Militant Vert (A, 1)
                      , Militant Bleu (G, 7)
                      , Militant Jaune (G, 2)
                      ]
+
+isOccupied :: Board -> Position -> Bool
+isOccupied (Board pieces) p = p `elem` fmap position pieces
 
 data Piece = Militant { party :: Party, position :: Position }
   deriving (Eq, Show, Generic)
@@ -141,22 +144,30 @@ allPossibleMoves game = do
 possibleMoves :: Board -> Party -> Position -> [Play]
 possibleMoves b party from@(x, y) = sort [Play party from to | to <- militant, b `hasNoPiece` to]
   where
-    militant = join [ possibleMove from dir n | dir <- enumFromTo minBound maxBound, n <- [1,2] ]
+    militant = join [ possibleMove b from dir 2 | dir <- enumFromTo minBound maxBound ]
     hasNoPiece (Board ps) to = to `notElem` (fmap position ps)
 
 data Direction = East | South | West | North
                | SE | SW | NE | NW
   deriving (Eq, Show, Enum, Bounded)
 
-possibleMove :: Position -> Direction -> Integer -> [Position]
-possibleMove (l, c) East n  = (\c' -> (l, c')) <$> safeShift c n
-possibleMove (l, c) West n  = (\c' -> (l, c')) <$> safeShift c (- n)
-possibleMove (l, c) South n = (\l' -> (l', c)) <$> safeShift l n
-possibleMove (l, c) North n = (\l' -> (l', c)) <$> safeShift l (- n)
-possibleMove p      SE n    = foldM (\pos dir -> possibleMove pos dir n) p [East, South]
-possibleMove p      SW n    = foldM (\pos dir -> possibleMove pos dir n) p [West, South]
-possibleMove p      NE n    = foldM (\pos dir -> possibleMove pos dir n) p [East, North]
-possibleMove p      NW n    = foldM (\pos dir -> possibleMove pos dir n) p [West, North]
+possibleMove ::  Board -> Position -> Direction -> Integer -> [ Position ]
+possibleMove _ _ _ 0 = []
+possibleMove b p d n =
+  case nextStep of
+    []     -> []
+    [next] -> next : possibleMove b next d (n - 1)
+  where nextStep = mfilter (not . isOccupied b) (moveOnePosition p d)
+
+moveOnePosition :: Position -> Direction -> [Position]
+moveOnePosition (l, c) East  = (\c' -> (l, c')) <$> safeShift c 1
+moveOnePosition (l, c) West   = (\c' -> (l, c')) <$> safeShift c (- 1)
+moveOnePosition (l, c) South = (\l' -> (l', c)) <$> safeShift l 1
+moveOnePosition (l, c) North  = (\l' -> (l', c)) <$> safeShift l (- 1)
+moveOnePosition p      SE     = foldM (\pos dir -> moveOnePosition pos dir) p [East, South]
+moveOnePosition p      SW     = foldM (\pos dir -> moveOnePosition pos dir) p [West, South]
+moveOnePosition p      NE    = foldM (\pos dir -> moveOnePosition pos dir) p [East, North]
+moveOnePosition p      NW     = foldM (\pos dir -> moveOnePosition pos dir) p [West, North]
 
 play :: Play -> Game -> Either DjambiError Game
 play p@(Play _ from to) g@(Game ps) | p `elem` allPossibleMoves g = Right $ Game $ p:ps
