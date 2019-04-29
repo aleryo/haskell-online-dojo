@@ -63,6 +63,9 @@ initialBoard = Board [ Militant Vert (A, 1)
 isOccupied :: Board -> Position -> Bool
 isOccupied (Board pieces) p = p `elem` fmap position pieces
 
+pieceAt :: Board -> Position -> Maybe Piece
+pieceAt (Board pieces) p = listToMaybe (filter (\ piece -> position piece == p) pieces)
+
 data Piece = Militant { party :: Party, position :: Position }
   deriving (Eq, Show, Generic)
 
@@ -122,6 +125,7 @@ instance Num Index where
 type Position = (Row, Col)
 
 data Play = Play Party Position Position
+          | Kill Party Position Position    
   deriving (Eq, Ord, Show, Generic)
 
 instance ToJSON Play
@@ -144,21 +148,25 @@ allPossibleMoves game = do
   possibleMoves b party' p
 
 possibleMoves :: Board -> Party -> Position -> [Play]
-possibleMoves b party from@(x, y) = sort [Play party from to | to <- militant, b `hasNoPiece` to]
+possibleMoves b party from@(x, y) = sort (fmap mkPlay militant)
   where
-    militant = join [ possibleMove b from dir 2 | dir <- enumFromTo minBound maxBound ]
-    hasNoPiece (Board ps) to = to `notElem` (fmap position ps)
+    militant = join [ possibleMove b party from dir 2 | dir <- enumFromTo minBound maxBound ]
+    mkPlay to | isOccupied b to = Kill party from to
+              | otherwise = Play party from to
 
 data Direction = East | South | West | North
                | SE | SW | NE | NW
   deriving (Eq, Show, Enum, Bounded)
 
-possibleMove ::  Board -> Position -> Direction -> Integer -> [ Position ]
-possibleMove b position d steps = unfoldr (uncurry nextStep) (position,steps)
+possibleMove ::  Board -> Party -> Position -> Direction -> Integer -> [ Position ]
+possibleMove b myParty position d steps = unfoldr (uncurry nextStep) (position,steps)
   where nextStep _ 0 = Nothing
         nextStep p n = do
-          pos <- mfilter (not . isOccupied b) (moveOnePosition p d)
-          pure (pos, (pos, n - 1))
+          targetPos <- moveOnePosition p d
+          case party <$> pieceAt b targetPos of
+            Just pty | pty /= myParty -> Just (targetPos, (targetPos, 0))
+            Just pty -> Nothing
+            Nothing -> pure (targetPos, (targetPos, n-1))
 
 moveOnePosition :: Position -> Direction -> Maybe Position
 moveOnePosition (l, c) East  = (\c' -> (l, c')) <$> safeShift c 1

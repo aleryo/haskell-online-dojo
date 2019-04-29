@@ -28,8 +28,8 @@ import           Test.QuickCheck
 --  3. [x] handle logical errors
 --  4. enrich game play
 --     a'. add one player to handle game turn
---     a. more pieces: Necromobile, Journaliste, Provocateur, Assassin, Chef
 --     b. kill a piece
+--     a. more pieces: Necromobile, Journaliste, Provocateur, Assassin, Chef
 --     c. end game
 --  4. plug https://github.com/berewt/J2S to get an AI opponent
 --  5. provide HTML Content type
@@ -129,25 +129,33 @@ spec = describe "Djambi Game" $ do
       getBoardFrom (Board [Militant Vert (C,1), Militant Rouge (A,7)]) <$> (play (Play Rouge (A, 7) (A, 6)) =<< play validplay initialGame)
         `shouldBe` Right (Board [ Militant Vert (D,1), Militant Rouge (A,6) ])
 
-    describe "Next Player Logic" $ do
+  describe "Next Player Logic" $ do
 
-      it "gives Vert as next player when starting game" $
-        getNextPlayer initialGame `shouldBe` Vert
+    it "gives Vert as next player when starting game" $
+      getNextPlayer initialGame `shouldBe` Vert
 
-      it "gives Rouge after a valid play" $
-        getNextPlayer <$> play validplay initialGame `shouldBe` Right Rouge
+    it "gives Rouge after a valid play" $
+      getNextPlayer <$> play validplay initialGame `shouldBe` Right Rouge
 
-      it "gives Bleu after a valid play by Rouge" $ do
-        let twoPlays = do
-              intermediate <- play validplay initialGame
-              play (Play Rouge (A, 7) (A, 6)) intermediate
-        getNextPlayer <$> twoPlays `shouldBe` Right Bleu
+    it "gives Bleu after a valid play by Rouge" $ do
+      let twoPlays = do
+            intermediate <- play validplay initialGame
+            play (Play Rouge (A, 7) (A, 6)) intermediate
+      getNextPlayer <$> twoPlays `shouldBe` Right Bleu
 
-      it "gives Jaune after a valid play by Bleu" $ do
-         let threePlays = foldM (flip play) initialGame [validplay, Play Rouge (A, 7) (A, 6), Play Bleu (G, 7) (F, 6)]
-         getNextPlayer <$> threePlays `shouldBe` Right Jaune
+    it "gives Jaune after a valid play by Bleu" $ do
+        let threePlays = foldM (flip play) initialGame [validplay, Play Rouge (A, 7) (A, 6), Play Bleu (G, 7) (F, 6)]
+        getNextPlayer <$> threePlays `shouldBe` Right Jaune
 
-      it "gives Vert after a valid play by Jaune" $ do
-         let fourPlays = foldM (flip play) initialGame [validplay, Play Rouge (A, 7) (A, 6), Play Bleu (G, 7) (F, 6), Play Jaune (G, 2) (F, 2)]
-         getNextPlayer <$> fourPlays `shouldBe` Right Vert
+    it "gives Vert after a valid play by Jaune" $ do
+        let fourPlays = foldM (flip play) initialGame [validplay, Play Rouge (A, 7) (A, 6), Play Bleu (G, 7) (F, 6), Play Jaune (G, 2) (F, 2)]
+        getNextPlayer <$> fourPlays `shouldBe` Right Vert
+  
+  describe "Kill Piece" $ do
 
+    it "killing a piece is a possible move" $ do
+      let fictitiousBoard = Board [ Militant Vert (A, 1)
+                                  , Militant Rouge (A, 3)
+                                  ] 
+      possibleMoves fictitiousBoard Vert (A, 1)
+        `shouldContain` [ Kill Vert (A, 1) (A,3) ]
