@@ -8,11 +8,9 @@ module Djambi where
 
 import           Control.Monad
 import           Data.Aeson    (FromJSON, ToJSON)
-import           Data.Function (on)
 import           Data.List     (sort, unfoldr)
 import           Data.Maybe
-import           Data.Ord      (comparing)
-import           GHC.Generics
+import           GHC.Generics (Generic)
 
 data Game = Game { plays :: [ Play ] }
   deriving (Eq, Show)
@@ -20,7 +18,8 @@ data Game = Game { plays :: [ Play ] }
 getNextPlayer :: Game -> Party
 getNextPlayer (Game [])                   = Vert
 getNextPlayer (Game (Play Jaune _ _ : _)) = Vert
-getNextPlayer (Game (Play play _ _ : _))  = succ play
+getNextPlayer (Game (Play ply _ _ : _))  = succ ply
+getNextPlayer _ = error "not implemented"
 
 initialGame :: Game
 initialGame = Game []
@@ -33,16 +32,19 @@ getBoardFrom board = foldr apply board . plays
 
 -- assumes Play is always valid wrt Board
 apply :: Play -> Board -> Board
-apply play (Board ps) = 
-  case play of 
+apply ply (Board ps) = 
+  case ply of 
     (Play _ from to) -> Board $ movePiece from to <$> ps
     (Kill _ from to) -> Board $ movePiece from to <$> filter ((/= to) . position) ps
+apply _ _ = error "not implemented"
 
-movePiece from to m@(Militant party from')
-          | from == from' = Militant party to
+movePiece :: Position -> Position -> Piece -> Piece
+movePiece from to m@(Militant pty from')
+          | from == from' = Militant pty to
           | otherwise     = m
 
-data Board = Board [ Piece ]
+data Board = Board { livePieces :: [ Piece ] } 
+           | BoardWithCadaverToReplace { livePieces :: [ Piece ] } 
   deriving (Eq, Show, Generic)
 
 instance ToJSON Board
@@ -65,9 +67,11 @@ initialBoard = Board [ Militant Vert (A, 1)
 
 isOccupied :: Board -> Position -> Bool
 isOccupied (Board pieces) p = p `elem` fmap position pieces
+isOccupied _ _ = error "not implemented"
 
 pieceAt :: Board -> Position -> Maybe Piece
 pieceAt (Board pieces) p = listToMaybe (filter (\ piece -> position piece == p) pieces)
+pieceAt _ _ = error "not implemented"
 
 data Piece = Militant { party :: Party, position :: Position }
   deriving (Eq, Show, Generic)
@@ -151,24 +155,24 @@ allPossibleMoves game = do
   possibleMoves b party' p
 
 possibleMoves :: Board -> Party -> Position -> [Play]
-possibleMoves b party from@(x, y) = sort (fmap mkPlay militant)
+possibleMoves b pty from = sort (fmap mkPlay militant)
   where
-    militant = join [ possibleMove b party from dir 2 | dir <- enumFromTo minBound maxBound ]
-    mkPlay to | isOccupied b to = Kill party from to
-              | otherwise = Play party from to
+    militant = join [ possibleMove b pty from dir 2 | dir <- enumFromTo minBound maxBound ]
+    mkPlay to | isOccupied b to = Kill pty from to
+              | otherwise = Play pty from to
 
 data Direction = East | South | West | North
                | SE | SW | NE | NW
   deriving (Eq, Show, Enum, Bounded)
 
 possibleMove ::  Board -> Party -> Position -> Direction -> Integer -> [ Position ]
-possibleMove b myParty position d steps = unfoldr (uncurry nextStep) (position,steps)
+possibleMove b myParty pos d steps = unfoldr (uncurry nextStep) (pos,steps)
   where nextStep _ 0 = Nothing
         nextStep p n = do
           targetPos <- moveOnePosition p d
           case party <$> pieceAt b targetPos of
             Just pty | pty /= myParty -> Just (targetPos, (targetPos, 0))
-            Just pty -> Nothing
+            Just  _ -> Nothing
             Nothing -> pure (targetPos, (targetPos, n-1))
 
 moveOnePosition :: Position -> Direction -> Maybe Position
@@ -182,5 +186,6 @@ moveOnePosition p      NE    = foldM (\pos dir -> moveOnePosition pos dir) p [Ea
 moveOnePosition p      NW    = foldM (\pos dir -> moveOnePosition pos dir) p [West, North]
 
 play :: Play -> Game -> Either DjambiError Game
-play p@(Play _ from to) g@(Game ps) | p `elem` allPossibleMoves g = Right $ Game $ p:ps
-                                    | otherwise = Left (InvalidPlay p)
+play p g@(Game ps) | p `elem` allPossibleMoves g = Right $ Game $ p:ps
+                   | otherwise = Left (InvalidPlay p)
+

@@ -2,10 +2,7 @@ module DjambiSpec where
 
 import           Control.Monad
 import           Data.Aeson                (ToJSON, encode)
-import           Data.Either               (fromRight)
-import           Data.Functor
 import           Data.List                 (sort)
-import           Data.Maybe
 import           Data.String               (fromString)
 import           Data.Text.Lazy            (unpack)
 import           Data.Text.Lazy.Encoding   (decodeUtf8)
@@ -14,7 +11,6 @@ import           Djambi.Server
 import           Network.HTTP.Types.Method
 import           Test.Hspec
 import           Test.Hspec.Wai            hiding (pendingWith)
-import           Test.QuickCheck
 
 -- Plan
 --
@@ -34,7 +30,10 @@ import           Test.QuickCheck
 --  4. plug https://github.com/berewt/J2S to get an AI opponent
 --  5. provide HTML Content type
 
+validplay :: Play
 validplay = Play Vert (C, 1) (D, 1)
+
+invalidPlay :: Play
 invalidPlay = Play Vert (C,1) (D, 3)
 
 spec :: Spec
@@ -60,7 +59,7 @@ spec = describe "Djambi Game" $ do
           secondPlay = Play Rouge (A, 7) (A, 6)
           secondMove = encode secondPlay
           Right updatedGame = play validplay initialGame >>= play secondPlay
-      request methodPost "/move" [("content-type", "application/json")] firstMove
+      void $ request methodPost "/move" [("content-type", "application/json")] firstMove
       request methodPost "/move" [("content-type", "application/json")] secondMove `shouldRespondWith` json (getBoard updatedGame)
 
     it "on POST /move returns error 400 given move is invalid" $ do
