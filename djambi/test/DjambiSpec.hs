@@ -152,10 +152,19 @@ spec = describe "Djambi Game" $ do
         getNextPlayer <$> fourPlays `shouldBe` Right Vert
   
   describe "Kill Piece" $ do
+    let fictitiousBoard = Board [ Militant Vert (A, 1)
+                                , Militant Rouge (A, 3)
+                                ] 
 
     it "killing a piece is a possible move" $ do
-      let fictitiousBoard = Board [ Militant Vert (A, 1)
-                                  , Militant Rouge (A, 3)
-                                  ] 
       possibleMoves fictitiousBoard Vert (A, 1)
         `shouldContain` [ Kill Vert (A, 1) (A,3) ]
+
+    it "replace piece when applying Kill move" $ do
+      let game = Game [ Kill Vert (A, 1) (A,3) ]
+
+      getBoardFrom fictitiousBoard game
+        `shouldBe` Board [ Militant Vert (A, 3) ] 
+
+    it "possible moves require player to place killed piece" $ 
+      pendingWith "to implement"

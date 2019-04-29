@@ -33,9 +33,12 @@ getBoardFrom board = foldr apply board . plays
 
 -- assumes Play is always valid wrt Board
 apply :: Play -> Board -> Board
-apply (Play _ from to) (Board ps) = Board $ movePiece <$> ps
-  where
-    movePiece m@(Militant party from')
+apply play (Board ps) = 
+  case play of 
+    (Play _ from to) -> Board $ movePiece from to <$> ps
+    (Kill _ from to) -> Board $ movePiece from to <$> filter ((/= to) . position) ps
+
+movePiece from to m@(Militant party from')
           | from == from' = Militant party to
           | otherwise     = m
 
