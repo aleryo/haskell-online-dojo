@@ -18,10 +18,13 @@ data Game = Game { plays :: [ Play ] }
 
 getNextPlayer :: Game -> Party
 getNextPlayer (Game [])                   = Vert
-getNextPlayer (Game (Play Jaune _ _ : _)) = Vert
-getNextPlayer (Game (Play pty _ _ : _))  = succ pty
-getNextPlayer (Game (Kill pty _ _ : _)) = pty
-getNextPlayer _ = error "not implemented"
+getNextPlayer (Game (Play pty _ _ : _))   = nextParty pty
+getNextPlayer (Game (Kill pty _ _ : _))   = pty
+getNextPlayer (Game (PlaceDead pty _ : _))  = nextParty pty
+
+nextParty :: Party -> Party
+nextParty Jaune = Vert
+nextParty pty = succ pty
 
 initialGame :: Game
 initialGame = Game []

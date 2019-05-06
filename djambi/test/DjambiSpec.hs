@@ -168,6 +168,11 @@ spec = describe "Djambi Game" $ do
       allPossibleMoves fictitiousBoard game 
         `shouldBe` [ PlaceDead Vert (l,c) | l <- [A .. I], c <- [1 .. 9], (l,c) /= (A, 3)]
 
+    -- TODO cannot place a dead in central case
+     
     it "can replace dead adversary on an empty position in board " $ 
-        getBoardFrom fictitiousBoard (Game  [ PlaceDead Vert (A,4),  Kill Vert (A, 1) (A,3) ])
-          `shouldBe` Board [ Militant Vert (A, 3), Dead (A, 4) ]
+      getBoardFrom fictitiousBoard (Game  [ PlaceDead Vert (A,4),  Kill Vert (A, 1) (A,3) ])
+        `shouldBe` Board [ Militant Vert (A, 3), Dead (A, 4) ]
+
+    it "update next player after placing a dead " $ 
+      getNextPlayer <$> play (PlaceDead Vert (A,4)) game `shouldBe` Right Rouge
