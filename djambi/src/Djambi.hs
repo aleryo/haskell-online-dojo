@@ -8,7 +8,7 @@ module Djambi where
 
 import           Control.Monad
 import           Data.Aeson    (FromJSON, ToJSON)
-import           Data.List     (sort, unfoldr)
+import           Data.List     (sort, unfoldr, (\\))
 import           Data.Maybe
 import           GHC.Generics (Generic)
 
@@ -18,7 +18,8 @@ data Game = Game { plays :: [ Play ] }
 getNextPlayer :: Game -> Party
 getNextPlayer (Game [])                   = Vert
 getNextPlayer (Game (Play Jaune _ _ : _)) = Vert
-getNextPlayer (Game (Play ply _ _ : _))  = succ ply
+getNextPlayer (Game (Play pty _ _ : _))  = succ pty
+getNextPlayer (Game (Kill pty _ _ : _)) = pty
 getNextPlayer _ = error "not implemented"
 
 initialGame :: Game
@@ -35,7 +36,8 @@ apply :: Play -> Board -> Board
 apply ply (Board ps) = 
   case ply of 
     (Play _ from to) -> Board $ movePiece from to <$> ps
-    (Kill _ from to) -> Board $ movePiece from to <$> filter ((/= to) . position) ps
+    (Kill _ from to) -> BoardWithCadaverToReplace $ movePiece from to <$> filter ((/= to) . position) ps
+    PlaceDead _ _ -> undefined
 apply _ _ = error "not implemented"
 
 movePiece :: Position -> Position -> Piece -> Piece
@@ -65,13 +67,18 @@ initialBoard = Board [ Militant Vert (A, 1)
                      , Militant Jaune (G, 2)
                      ]
 
+emptyPositions :: [ Piece ] -> [ Position ]
+emptyPositions pieces = [ (x,y)  | x <- [ A .. I ], y <- [ 1 .. 9 ] ] \\ fmap position pieces
+
 isOccupied :: Board -> Position -> Bool
-isOccupied (Board pieces) p = p `elem` fmap position pieces
-isOccupied _ _ = error "not implemented"
+isOccupied b = isJust . pieceAt b
 
 pieceAt :: Board -> Position -> Maybe Piece
-pieceAt (Board pieces) p = listToMaybe (filter (\ piece -> position piece == p) pieces)
-pieceAt _ _ = error "not implemented"
+pieceAt b p = case b of 
+  Board pieces -> getPieceAt pieces
+  BoardWithCadaverToReplace pieces ->  getPieceAt pieces
+  where
+    getPieceAt pieces = listToMaybe (filter (\ piece -> position piece == p) pieces)
 
 data Piece = Militant { party :: Party, position :: Position }
   deriving (Eq, Show, Generic)
@@ -133,6 +140,7 @@ type Position = (Row, Col)
 
 data Play = Play Party Position Position
           | Kill Party Position Position    
+          | PlaceDead Party Position
   deriving (Eq, Ord, Show, Generic)
 
 instance ToJSON Play
@@ -147,12 +155,17 @@ safeShift value shift
   | shift >  0 = guard (value /= maxBound) *> safeShift (succ value) (pred shift)
   | otherwise  = guard (value /= minBound) *> safeShift (pred value) (succ shift)
 
-allPossibleMoves :: Game -> [Play]
-allPossibleMoves game = do
-  let b@(Board ps) = getBoard game
-  let party' = getNextPlayer game
-  Militant _ p <- filter ((== party') . party) ps
-  possibleMoves b party' p
+allPossibleMoves :: Board -> Game -> [Play]
+allPossibleMoves initBoard game = 
+  let b = getBoardFrom initBoard game
+      party' = getNextPlayer game
+        
+  in case b of 
+       (BoardWithCadaverToReplace pieces) -> 
+        [ PlaceDead party' pos | pos <- emptyPositions pieces ]
+       board @(Board ps) -> do
+         Militant _ p <- filter ((== party') . party) ps
+         possibleMoves board party' p
 
 possibleMoves :: Board -> Party -> Position -> [Play]
 possibleMoves b pty from = sort (fmap mkPlay militant)
@@ -186,6 +199,6 @@ moveOnePosition p      NE    = foldM (\pos dir -> moveOnePosition pos dir) p [Ea
 moveOnePosition p      NW    = foldM (\pos dir -> moveOnePosition pos dir) p [West, North]
 
 play :: Play -> Game -> Either DjambiError Game
-play p g@(Game ps) | p `elem` allPossibleMoves g = Right $ Game $ p:ps
+play p g@(Game ps) | p `elem` allPossibleMoves initialBoard g = Right $ Game $ p:ps
                    | otherwise = Left (InvalidPlay p)
 

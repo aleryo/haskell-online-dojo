@@ -20,7 +20,7 @@ djambiServer gameRef = serve djambiApi server
 
     handlerGame = liftIO $ getBoard <$> readIORef gameRef
 
-    handlerMoves = liftIO $ allPossibleMoves <$> readIORef gameRef
+    handlerMoves = liftIO $ allPossibleMoves initialBoard <$> readIORef gameRef
 
     -- TODO handle race conditions...
     handlerMove move = do

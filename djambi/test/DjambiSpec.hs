@@ -47,7 +47,7 @@ spec = describe "Djambi Game" $ do
       get "/game" `shouldRespondWith` json initialBoard
 
     it "on GET /possible-moves returns list of valid plays for current player as JSON" $
-      get "/possible-moves" `shouldRespondWith` json (allPossibleMoves initialGame)
+      get "/possible-moves" `shouldRespondWith` json (allPossibleMoves initialBoard initialGame)
 
     it "on POST /move returns updated board as JSON given move is legal" $ do
       let move = encode validplay
@@ -115,8 +115,8 @@ spec = describe "Djambi Game" $ do
       possibleMoves initialBoard Vert (B, 1) `shouldBe` []
 
     it "generates a list of all possible moves" $ do
-      allPossibleMoves initialGame `shouldContain` possibleMoves initialBoard Vert (C,1)
-      allPossibleMoves initialGame `shouldContain` possibleMoves initialBoard Vert (C,2)
+      allPossibleMoves initialBoard initialGame `shouldContain` possibleMoves initialBoard Vert (C,1)
+      allPossibleMoves initialBoard initialGame `shouldContain` possibleMoves initialBoard Vert (C,2)
 
     it "rejects play if it is not valid" $
       -- The game piece in C1 is a activist, so it can only move by
@@ -154,16 +154,16 @@ spec = describe "Djambi Game" $ do
     let fictitiousBoard = Board [ Militant Vert (A, 1)
                                 , Militant Rouge (A, 3)
                                 ] 
+    let game = Game [ Kill Vert (A, 1) (A,3) ]
 
     it "killing a piece is a possible move" $ do
       possibleMoves fictitiousBoard Vert (A, 1)
         `shouldContain` [ Kill Vert (A, 1) (A,3) ]
 
     it "replace piece when applying Kill move" $ do
-      let game = Game [ Kill Vert (A, 1) (A,3) ]
-
       getBoardFrom fictitiousBoard game
-        `shouldBe` Board [ Militant Vert (A, 3) ] 
+        `shouldBe` BoardWithCadaverToReplace [ Militant Vert (A, 3) ] 
 
     it "possible moves require player to place killed piece" $ 
-      pendingWith "to implement"
+      allPossibleMoves fictitiousBoard game 
+        `shouldBe` [ PlaceDead Vert (l,c) | l <- [A .. I], c <- [1 .. 9], (l,c) /= (A, 3)]
