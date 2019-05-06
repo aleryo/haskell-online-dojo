@@ -167,3 +167,7 @@ spec = describe "Djambi Game" $ do
     it "possible moves require player to place killed piece" $ 
       allPossibleMoves fictitiousBoard game 
         `shouldBe` [ PlaceDead Vert (l,c) | l <- [A .. I], c <- [1 .. 9], (l,c) /= (A, 3)]
+
+    it "can replace dead adversary on an empty position in board " $ 
+        getBoardFrom fictitiousBoard (Game  [ PlaceDead Vert (A,4),  Kill Vert (A, 1) (A,3) ])
+          `shouldBe` Board [ Militant Vert (A, 3), Dead (A, 4) ]

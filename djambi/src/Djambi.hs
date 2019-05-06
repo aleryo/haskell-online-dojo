@@ -8,8 +8,9 @@ module Djambi where
 
 import           Control.Monad
 import           Data.Aeson    (FromJSON, ToJSON)
-import           Data.List     (sort, unfoldr, (\\))
+import           Data.List     (insertBy, sort, unfoldr, (\\))
 import           Data.Maybe
+import           Data.Ord
 import           GHC.Generics (Generic)
 
 data Game = Game { plays :: [ Play ] }
@@ -33,16 +34,21 @@ getBoardFrom board = foldr apply board . plays
 
 -- assumes Play is always valid wrt Board
 apply :: Play -> Board -> Board
-apply ply (Board ps) = 
+apply ply board @ (Board ps) = 
   case ply of 
     (Play _ from to) -> Board $ movePiece from to <$> ps
     (Kill _ from to) -> BoardWithCadaverToReplace $ movePiece from to <$> filter ((/= to) . position) ps
-    PlaceDead _ _ -> undefined
-apply _ _ = error "not implemented"
+    _ -> error $ "invalid play " <> show ply <> " on board " <> show board
+apply (PlaceDead _ pos) (BoardWithCadaverToReplace ps) = 
+    Board (placePiece (Dead pos) ps)
+apply ply board = error $ "invalid play " <> show ply <> " on board " <> show board
 
 movePiece :: Position -> Position -> Piece -> Piece
 movePiece from to m@(Militant pty from')
           | from == from' = Militant pty to
+          | otherwise     = m
+movePiece from to m@(Dead from')
+          | from == from' = Dead to
           | otherwise     = m
 
 data Board = Board { livePieces :: [ Piece ] } 
@@ -70,6 +76,10 @@ initialBoard = Board [ Militant Vert (A, 1)
 emptyPositions :: [ Piece ] -> [ Position ]
 emptyPositions pieces = [ (x,y)  | x <- [ A .. I ], y <- [ 1 .. 9 ] ] \\ fmap position pieces
 
+placePiece :: Piece -> [ Piece ] -> [ Piece ]
+placePiece piece pieces = 
+  insertBy (comparing position) piece pieces 
+
 isOccupied :: Board -> Position -> Bool
 isOccupied b = isJust . pieceAt b
 
@@ -81,6 +91,7 @@ pieceAt b p = case b of
     getPieceAt pieces = listToMaybe (filter (\ piece -> position piece == p) pieces)
 
 data Piece = Militant { party :: Party, position :: Position }
+          |  Dead { position :: Position }
   deriving (Eq, Show, Generic)
 
 instance ToJSON Piece
