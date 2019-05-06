@@ -17,10 +17,10 @@ data Game = Game { plays :: [ Play ] }
   deriving (Eq, Show)
 
 getNextPlayer :: Game -> Party
-getNextPlayer (Game [])                   = Vert
-getNextPlayer (Game (Play pty _ _ : _))   = nextParty pty
-getNextPlayer (Game (Kill pty _ _ : _))   = pty
-getNextPlayer (Game (PlaceDead pty _ : _))  = nextParty pty
+getNextPlayer (Game [])                    = Vert
+getNextPlayer (Game (Play pty _ _ : _))    = nextParty pty
+getNextPlayer (Game (Kill pty _ _ : _))    = pty
+getNextPlayer (Game (PlaceDead pty _ : _)) = nextParty pty
 
 nextParty :: Party -> Party
 nextParty Jaune = Vert
