@@ -7,6 +7,8 @@ import           Data.String               (fromString)
 import           Data.Text.Lazy            (unpack)
 import           Data.Text.Lazy.Encoding   (decodeUtf8)
 import           Djambi
+import Djambi.Position
+import Djambi.Piece
 import           Djambi.Server
 import           Network.HTTP.Types.Method
 import           Test.Hspec

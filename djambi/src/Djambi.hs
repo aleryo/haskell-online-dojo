@@ -13,6 +13,8 @@ import           Data.Aeson    (FromJSON, ToJSON)
 import           Data.List     (insertBy, sort, unfoldr, (\\))
 import           Data.Maybe
 import           Data.Ord
+import Djambi.Piece
+import Djambi.Position
 import           GHC.Generics (Generic)
 
 data Game = Game { plays :: [ Play ] }
@@ -106,83 +108,6 @@ livePiecesFrom pty = catMaybes . fmap posAndParty
         | otherwise = Nothing
       posAndParty _ = Nothing
          
-data LivePiece = LivePiece { party :: Party, livePos :: Position }
-  deriving (Eq, Show, Generic, ToJSON, FromJSON)
-
-newtype DeadPiece = DeadPiece { deadPos :: Position }
-   deriving newtype (Eq, Show, ToJSON, FromJSON)
-
-position :: Piece -> Position
-position (Militant (LivePiece _ pos)) = pos
-position (Dead (DeadPiece pos)) = pos
-
-data Piece = Militant LivePiece
-          |  Dead DeadPiece
-  deriving (Eq, Show, Generic)
-
-militant :: Party -> Position -> Piece
-militant pty pos = Militant (LivePiece pty pos)
-
-dead :: Position -> Piece
-dead = Dead . DeadPiece 
-
-instance ToJSON Piece
-instance FromJSON Piece
-
-data Party = Vert | Rouge | Bleu | Jaune
-  deriving (Eq, Enum, Ord, Show, Generic)
-
-instance ToJSON Party
-instance FromJSON Party
-
-data Color = Live Party | NotLive
-
-colorOf :: Piece -> Color
-colorOf (Militant (LivePiece pty _)) = Live pty
-colorOf Dead{} = NotLive
-
-data Index = A | B | C | D | E | F | G | H | I
-  deriving (Enum, Bounded, Eq, Ord, Show, Generic)
-
-instance ToJSON Index
-instance FromJSON Index
-
-newtype Col = Col { col :: Index }
-  deriving newtype (Enum, Bounded, Eq, Ord, Num, ToJSON, FromJSON)
-
-type Row = Index
-
-instance Show Col where
-  show c = case col c of
-    A -> "1"
-    B -> "2"
-    C -> "3"
-    D -> "4"
-    E -> "5"
-    F -> "6"
-    G -> "7"
-    H -> "8"
-    I -> "9"
-
-instance Num Index where
-  fromInteger 1 = A
-  fromInteger 2 = B
-  fromInteger 3 = C
-  fromInteger 4 = D
-  fromInteger 5 = E
-  fromInteger 6 = F
-  fromInteger 7 = G
-  fromInteger 8 = H
-  fromInteger 9 = I
-  fromInteger _ = error "out of bounds"
-
-  (+)    _ _ = error "Unsupported"
-  (*)    _ _ = error "Unsupported"
-  (-)    _ _ = error "Unsupported"
-  signum _   = error "Unsupported"
-  abs    _   = error "Unsupported"
-
-type Position = (Row, Col)
 
 data Play = Play Party Position Position
           | Kill Party Position Position    
