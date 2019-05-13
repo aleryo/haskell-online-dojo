@@ -95,12 +95,12 @@ pieceAt b p = case b of
   where
     getPieceAt pieces = listToMaybe (filter (\ piece -> position piece == p) pieces)
 
-partyAt :: Board -> Position -> Maybe Party
+partyAt :: Board -> Position -> Maybe (Either DeadPiece LivePiece) 
 partyAt b p = do
   piece <- pieceAt b p
   case piece of
-    Militant (LivePiece pty _) -> Just pty
-    _ -> Nothing 
+    Militant l -> Just $ Right l
+    Dead d -> Just $ Left d
 
 livePiecesFrom :: Party -> [Piece] -> [Position]
 livePiecesFrom pty = catMaybes . fmap posAndParty
@@ -228,7 +228,7 @@ possibleMove b myParty pos d steps = unfoldr (uncurry nextStep) (pos,steps)
         nextStep p n = do
           targetPos <- moveOnePosition p d
           case partyAt b targetPos of
-            Just pty | pty /= myParty -> Just (targetPos, (targetPos, 0))
+            Just (Right (LivePiece pty _)) | pty /= myParty -> Just (targetPos, (targetPos, 0))
             Just  _ -> Nothing
             Nothing -> pure (targetPos, (targetPos, n-1))
 

@@ -178,9 +178,9 @@ spec = describe "Djambi Game" $ do
     it "update next player after placing a dead " $ 
       getNextPlayer <$> play (PlaceDead Vert (A,4)) game `shouldBe` Right Rouge
 
-    -- it "prevents movement"  $ do
-    --   let boardWithOneDead = Board [ Militant Vert (A, 1)
-    --                                , Dead (A, 2)
-    --                                ] 
-    --   possibleMoves boardWithOneDead Vert (A,1)
-    --     `shouldBe` [Play Vert (A, 1) x | x <- [(B, 2), (C, 3), (B, 1), (C, 1)]]
+    it "prevents movement"  $ do
+      let boardWithOneDead = Board [ militant Vert (A, 1)
+                                   , dead (A, 2)
+                                   ] 
+      possibleMoves boardWithOneDead Vert (A,1)
+        `shouldBe` sort [Play Vert (A, 1) x | x <- [(B, 2), (C, 3), (B, 1), (C, 1)]]
