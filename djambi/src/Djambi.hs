@@ -95,13 +95,9 @@ pieceAt b p = case b of
   where
     getPieceAt pieces = listToMaybe (filter (\ piece -> position piece == p) pieces)
 
-partyAt :: Board -> Position -> Maybe (Either DeadPiece LivePiece) 
-partyAt b p = do
-  piece <- pieceAt b p
-  case piece of
-    Militant l -> Just $ Right l
-    Dead d -> Just $ Left d
-
+partyAt :: Board -> Position -> Maybe Color
+partyAt b p =  colorOf <$> pieceAt b p
+    
 livePiecesFrom :: Party -> [Piece] -> [Position]
 livePiecesFrom pty = catMaybes . fmap posAndParty
     where
@@ -138,6 +134,12 @@ data Party = Vert | Rouge | Bleu | Jaune
 
 instance ToJSON Party
 instance FromJSON Party
+
+data Color = Live Party | NotLive
+
+colorOf :: Piece -> Color
+colorOf (Militant (LivePiece pty _)) = Live pty
+colorOf Dead{} = NotLive
 
 data Index = A | B | C | D | E | F | G | H | I
   deriving (Enum, Bounded, Eq, Ord, Show, Generic)
@@ -228,7 +230,7 @@ possibleMove b myParty pos d steps = unfoldr (uncurry nextStep) (pos,steps)
         nextStep p n = do
           targetPos <- moveOnePosition p d
           case partyAt b targetPos of
-            Just (Right (LivePiece pty _)) | pty /= myParty -> Just (targetPos, (targetPos, 0))
+            Just (Live pty) | pty /= myParty -> Just (targetPos, (targetPos, 0))
             Just  _ -> Nothing
             Nothing -> pure (targetPos, (targetPos, n-1))
 
@@ -245,4 +247,3 @@ moveOnePosition p      NW    = foldM (\pos dir -> moveOnePosition pos dir) p [We
 play :: Play -> Game -> Either DjambiError Game
 play p g@(Game ps) | p `elem` allPossibleMoves initialBoard g = Right $ Game $ p:ps
                    | otherwise = Left (InvalidPlay p)
-
