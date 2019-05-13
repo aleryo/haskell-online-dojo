@@ -1,6 +1,8 @@
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE DeriveAnyClass         #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE StandaloneDeriving         #-}
 {-# LANGUAGE TupleSections              #-}
 
@@ -43,15 +45,15 @@ apply ply board @ (Board ps) =
     (Kill _ from to) -> BoardWithCadaverToReplace $ movePiece from to <$> filter ((/= to) . position) ps
     _ -> error $ "invalid play " <> show ply <> " on board " <> show board
 apply (PlaceDead _ pos) (BoardWithCadaverToReplace ps) = 
-    Board (placePiece (Dead pos) ps)
+    Board (placePiece (Dead $ DeadPiece pos) ps)
 apply ply board = error $ "invalid play " <> show ply <> " on board " <> show board
 
 movePiece :: Position -> Position -> Piece -> Piece
-movePiece from to m@(Militant pty from')
-          | from == from' = Militant pty to
+movePiece from to m@(Militant (LivePiece pty from'))
+          | from == from' = militant pty to
           | otherwise     = m
-movePiece from to m@(Dead from')
-          | from == from' = Dead to
+movePiece from to m@(Dead (DeadPiece from'))
+          | from == from' = Dead $ DeadPiece to
           | otherwise     = m
 
 data Board = Board { livePieces :: [ Piece ] } 
@@ -62,18 +64,18 @@ instance ToJSON Board
 instance FromJSON Board
 
 initialBoard :: Board
-initialBoard = Board [ Militant Vert (A, 1)
-                     , Militant Vert (A, 2)
-                     , Militant Vert (A, 3)
-                     , Militant Vert (B, 1)
-                     , Militant Vert (B, 2)
-                     , Militant Vert (B, 3)
-                     , Militant Vert (C, 1)
-                     , Militant Vert (C, 2)
-                     , Militant Vert (C, 3)
-                     , Militant Rouge (A, 7)
-                     , Militant Bleu (G, 7)
-                     , Militant Jaune (G, 2)
+initialBoard = Board [ militant Vert (A, 1)
+                     , militant Vert (A, 2)
+                     , militant Vert (A, 3)
+                     , militant Vert (B, 1)
+                     , militant Vert (B, 2)
+                     , militant Vert (B, 3)
+                     , militant Vert (C, 1)
+                     , militant Vert (C, 2)
+                     , militant Vert (C, 3)
+                     , militant Rouge (A, 7)
+                     , militant Bleu (G, 7)
+                     , militant Jaune (G, 2)
                      ]
 
 emptyPositions :: [ Piece ] -> [ Position ]
@@ -93,9 +95,40 @@ pieceAt b p = case b of
   where
     getPieceAt pieces = listToMaybe (filter (\ piece -> position piece == p) pieces)
 
-data Piece = Militant { party :: Party, position :: Position }
-          |  Dead { position :: Position }
+partyAt :: Board -> Position -> Maybe Party
+partyAt b p = do
+  piece <- pieceAt b p
+  case piece of
+    Militant (LivePiece pty _) -> Just pty
+    _ -> Nothing 
+
+livePiecesFrom :: Party -> [Piece] -> [Position]
+livePiecesFrom pty = catMaybes . fmap posAndParty
+    where
+      posAndParty (Militant (LivePiece pty' pos)) 
+        | pty' == pty = Just pos
+        | otherwise = Nothing
+      posAndParty _ = Nothing
+         
+data LivePiece = LivePiece { party :: Party, livePos :: Position }
+  deriving (Eq, Show, Generic, ToJSON, FromJSON)
+
+newtype DeadPiece = DeadPiece { deadPos :: Position }
+   deriving newtype (Eq, Show, ToJSON, FromJSON)
+
+position :: Piece -> Position
+position (Militant (LivePiece _ pos)) = pos
+position (Dead (DeadPiece pos)) = pos
+
+data Piece = Militant LivePiece
+          |  Dead DeadPiece
   deriving (Eq, Show, Generic)
+
+militant :: Party -> Position -> Piece
+militant pty pos = Militant (LivePiece pty pos)
+
+dead :: Position -> Piece
+dead = Dead . DeadPiece 
 
 instance ToJSON Piece
 instance FromJSON Piece
@@ -113,10 +146,7 @@ instance ToJSON Index
 instance FromJSON Index
 
 newtype Col = Col { col :: Index }
-  deriving (Enum, Bounded, Eq, Ord, Num)
-
-deriving newtype instance ToJSON Col
-deriving newtype instance FromJSON Col
+  deriving newtype (Enum, Bounded, Eq, Ord, Num, ToJSON, FromJSON)
 
 type Row = Index
 
@@ -178,13 +208,13 @@ allPossibleMoves initBoard game =
        (BoardWithCadaverToReplace pieces) -> 
         [ PlaceDead party' pos | pos <- emptyPositions pieces ]
        board @(Board ps) -> do
-         Militant _ p <- filter ((== party') . party) ps
+         p <- livePiecesFrom party' ps
          possibleMoves board party' p
 
 possibleMoves :: Board -> Party -> Position -> [Play]
-possibleMoves b pty from = sort (fmap mkPlay militant)
+possibleMoves b pty from = sort (fmap mkPlay piece)
   where
-    militant = join [ possibleMove b pty from dir 2 | dir <- enumFromTo minBound maxBound ]
+    piece = join [ possibleMove b pty from dir 2 | dir <- enumFromTo minBound maxBound ]
     mkPlay to | isOccupied b to = Kill pty from to
               | otherwise = Play pty from to
 
@@ -197,7 +227,7 @@ possibleMove b myParty pos d steps = unfoldr (uncurry nextStep) (pos,steps)
   where nextStep _ 0 = Nothing
         nextStep p n = do
           targetPos <- moveOnePosition p d
-          case party <$> pieceAt b targetPos of
+          case partyAt b targetPos of
             Just pty | pty /= myParty -> Just (targetPos, (targetPos, 0))
             Just  _ -> Nothing
             Nothing -> pure (targetPos, (targetPos, n-1))

@@ -23,8 +23,9 @@ import           Test.Hspec.Wai            hiding (pendingWith)
 --  2. [x] scaffold HTTP server to serve JSON
 --  3. [x] handle logical errors
 --  4. enrich game play
---     a'. add one player to handle game turn
---     b. kill a piece
+--     a'. [x] add one player to handle game turn
+--     b. [x] kill a piece
+--     c. handle necromobile 
 --     a. more pieces: Necromobile, Journaliste, Provocateur, Assassin, Chef
 --     c. end game
 --  4. plug https://github.com/berewt/J2S to get an AI opponent
@@ -125,8 +126,8 @@ spec = describe "Djambi Game" $ do
       play invalidPlay initialGame  `shouldBe` Left (InvalidPlay invalidPlay)
 
     it "returns updated board when there are 2 plays" $
-      getBoardFrom (Board [Militant Vert (C,1), Militant Rouge (A,7)]) <$> (play (Play Rouge (A, 7) (A, 6)) =<< play validplay initialGame)
-        `shouldBe` Right (Board [ Militant Vert (D,1), Militant Rouge (A,6) ])
+      getBoardFrom (Board [militant Vert (C,1), militant Rouge (A,7)]) <$> (play (Play Rouge (A, 7) (A, 6)) =<< play validplay initialGame)
+        `shouldBe` Right (Board [ militant Vert (D,1), militant Rouge (A,6) ])
 
   describe "Next Player Logic" $ do
 
@@ -150,9 +151,9 @@ spec = describe "Djambi Game" $ do
         let fourPlays = foldM (flip play) initialGame [validplay, Play Rouge (A, 7) (A, 6), Play Bleu (G, 7) (F, 6), Play Jaune (G, 2) (F, 2)]
         getNextPlayer <$> fourPlays `shouldBe` Right Vert
   
-  describe "Kill Piece" $ do
-    let fictitiousBoard = Board [ Militant Vert (A, 1)
-                                , Militant Rouge (A, 3)
+  describe "Dead Piece" $ do
+    let fictitiousBoard = Board [ militant Vert (A, 1)
+                                , militant Rouge (A, 3)
                                 ] 
     let game = Game [ Kill Vert (A, 1) (A,3) ]
 
@@ -162,17 +163,24 @@ spec = describe "Djambi Game" $ do
 
     it "replace piece when applying Kill move" $ do
       getBoardFrom fictitiousBoard game
-        `shouldBe` BoardWithCadaverToReplace [ Militant Vert (A, 3) ] 
+        `shouldBe` BoardWithCadaverToReplace [ militant Vert (A, 3) ] 
 
     it "possible moves require player to place killed piece" $ 
       allPossibleMoves fictitiousBoard game 
         `shouldBe` [ PlaceDead Vert (l,c) | l <- [A .. I], c <- [1 .. 9], (l,c) /= (A, 3)]
 
     -- TODO cannot place a dead in central case
-     
+
     it "can replace dead adversary on an empty position in board " $ 
       getBoardFrom fictitiousBoard (Game  [ PlaceDead Vert (A,4),  Kill Vert (A, 1) (A,3) ])
-        `shouldBe` Board [ Militant Vert (A, 3), Dead (A, 4) ]
+        `shouldBe` Board [ militant Vert (A, 3), dead (A, 4) ]
 
     it "update next player after placing a dead " $ 
       getNextPlayer <$> play (PlaceDead Vert (A,4)) game `shouldBe` Right Rouge
+
+    -- it "prevents movement"  $ do
+    --   let boardWithOneDead = Board [ Militant Vert (A, 1)
+    --                                , Dead (A, 2)
+    --                                ] 
+    --   possibleMoves boardWithOneDead Vert (A,1)
+    --     `shouldBe` [Play Vert (A, 1) x | x <- [(B, 2), (C, 3), (B, 1), (C, 1)]]
