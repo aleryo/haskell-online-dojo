@@ -3,6 +3,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving         #-}
 module Djambi.Position where
 
+import           Control.Monad
 import Data.Aeson
 import GHC.Generics
 
@@ -48,3 +49,9 @@ instance Num Index where
     abs    _   = error "Unsupported"
 
 type Position = (Row, Col)
+
+safeShift :: (Bounded a, Ord a, Enum a) => a -> Integer -> Maybe a
+safeShift value shift
+  | shift == 0 = pure value
+  | shift >  0 = guard (value /= maxBound) *> safeShift (succ value) (pred shift)
+  | otherwise  = guard (value /= minBound) *> safeShift (pred value) (succ shift)
