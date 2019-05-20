@@ -18,7 +18,7 @@ import Djambi.Position
 import           GHC.Generics (Generic)
 
 data Game = Game { plays :: [ Play ] }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, ToJSON)
 
 getNextPlayer :: Game -> Party
 getNextPlayer (Game [])                    = Vert

@@ -1,0 +1,138 @@
+
+./Setup.hs,15
+main main1,2
+
+./app/Main.hs,37
+module Main Main0,1
+main main5,6
+
+./test/Djambi/ServerSpec.hs,123
+module Djambi.ServerSpec Djambi.ServerSpec0,1
+validplay validplay13,14
+invalidPlay invalidPlay16,17
+spec spec19,20
+
+./test/Djambi/GameSpec.hs,119
+module Djambi.GameSpec Djambi.GameSpec0,1
+validplay validplay26,27
+invalidPlay invalidPlay29,30
+spec spec32,33
+
+./test/test.hs,0
+
+./src/Djambi/Position.hs,839
+module Djambi.Position Djambi.Position3,4
+data Index Index9,10
+data Index = A A9,10
+data Index = A | B B9,10
+data Index = A | B | C C9,10
+data Index = A | B | C | D D9,10
+data Index = A | B | C | D | E E9,10
+data Index = A | B | C | D | E | F F9,10
+data Index = A | B | C | D | E | F | G G9,10
+data Index = A | B | C | D | E | F | G | H H9,10
+data Index = A | B | C | D | E | F | G | H | II9,10
+instance ToJSON ToJSON Index12,13
+instance FromJSON FromJSON Index13,14
+newtype Col Col15,16
+newtype Col = Col { col col15,16
+type Row Row18,19
+instance Show Show Col20,21
+    show show21,22
+instance Num Num Index32,33
+    fromInteger fromInteger33,34
+    (+(+)44,45
+    (*(*)45,46
+    (-(-)46,47
+    signum signum47,48
+    abs abs48,49
+type Position Position50,51
+safeShift safeShift52,53
+
+./src/Djambi/Piece.hs,945
+module Djambi.Piece Djambi.Piece4,5
+data LivePiece LivePiece10,11
+data LivePiece = LivePiece LivePiece10,11
+data LivePiece = LivePiece { party party10,11
+data LivePiece = LivePiece { party :: Party, livePos livePos10,11
+newtype DeadPiece DeadPiece13,14
+newtype DeadPiece = DeadPiece { deadPos deadPos13,14
+position position16,17
+data Piece Piece20,21
+data Piece = Militant Militant20,21
+        |  Dead Dead21,22
+militant militant24,25
+dead dead27,28
+instance ToJSON ToJSON Piece30,31
+instance FromJSON FromJSON Piece31,32
+data Party Party33,34
+data Party = Vert Vert33,34
+data Party = Vert | Rouge Rouge33,34
+data Party = Vert | Rouge | Bleu Bleu33,34
+data Party = Vert | Rouge | Bleu | JauneJaune33,34
+instance ToJSON ToJSON Party36,37
+instance FromJSON FromJSON Party37,38
+data Color Color39,40
+data Color = Live Live39,40
+data Color = Live Party | NotLiveNotLive39,40
+colorOf colorOf41,42
+
+./src/Djambi/Server.hs,157
+module Djambi.Server Djambi.Server0,1
+type DjambiApi DjambiApi8,9
+djambiApi djambiApi12,13
+djambiServer djambiServer15,16
+djambiApp djambiApp33,34
+
+./src/Djambi/Game.hs,1755
+module Djambi.Game Djambi.Game8,9
+data Game Game19,20
+data Game = Game Game19,20
+data Game = Game { plays plays19,20
+getNextPlayer getNextPlayer22,23
+nextParty nextParty28,29
+initialGame initialGame32,33
+getBoard getBoard35,36
+getBoardFrom getBoardFrom38,39
+apply apply42,43
+movePiece movePiece52,53
+data Board Board60,61
+data Board = Board Board60,61
+data Board = Board { livePieces livePieces60,61
+           | BoardWithCadaverToReplace BoardWithCadaverToReplace61,62
+           | BoardWithCadaverToReplace { livePieces livePieces61,62
+instance ToJSON ToJSON Board64,65
+instance FromJSON FromJSON Board65,66
+initialBoard initialBoard67,68
+emptyPositions emptyPositions82,83
+placePiece placePiece85,86
+isOccupied isOccupied89,90
+pieceAt pieceAt92,93
+partyAt partyAt99,100
+livePiecesFrom livePiecesFrom102,103
+data Play Play111,112
+data Play = Play Play111,112
+          | Kill Kill112,113
+          | PlaceDead PlaceDead113,114
+instance ToJSON ToJSON Play116,117
+instance FromJSON FromJSON Play117,118
+data DjambiError DjambiError119,120
+data DjambiError = InvalidPlay InvalidPlay119,120
+allPossibleMoves allPossibleMoves122,123
+possibleMoves possibleMoves134,135
+data Direction Direction141,142
+data Direction = East East141,142
+data Direction = East | South South141,142
+data Direction = East | South | West West141,142
+data Direction = East | South | West | NorthNorth141,142
+               | SE SE142,143
+               | SE | SW SW142,143
+               | SE | SW | NE NE142,143
+               | SE | SW | NE | NWNW142,143
+possibleMove possibleMove145,146
+moveOnePosition moveOnePosition155,156
+play play165,166
+play p g@(Game ps) | p `elem`elem166,167
+
+./src/Djambi.hs,25
+module DjambiDjambi8,9

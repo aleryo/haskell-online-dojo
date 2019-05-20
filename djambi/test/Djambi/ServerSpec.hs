@@ -6,6 +6,7 @@ import           Data.String               (fromString)
 import           Data.Text.Lazy            (unpack)
 import           Data.Text.Lazy.Encoding   (decodeUtf8)
 import           Djambi
+import           Djambi.GameState
 import           Djambi.Server
 import           Network.HTTP.Types.Method
 import           Test.Hspec
@@ -17,11 +18,15 @@ validplay = Play Vert (C, 1) (D, 1)
 invalidPlay :: Play
 invalidPlay = Play Vert (C,1) (D, 3)
 
+-- Game state machine
+--  *  empty game -> join users{4} -> game full -> (possible moves -> move)* -> (end game | quit game)
+-- 
 spec :: Spec
-spec =
-  with djambiApp $ describe "Djambi Server" $ do
-    let json :: (ToJSON a) => a -> ResponseMatcher
-        json = fromString . unpack . decodeUtf8 . encode
+spec =  with djambiApp $ do
+  let json :: (ToJSON a) => a -> ResponseMatcher
+      json = fromString . unpack . decodeUtf8 . encode
+
+  describe "Djambi Server" $ do
 
     it "on GET /game returns state of the game as JSON" $
       get "/game" `shouldRespondWith` json initialBoard
@@ -45,3 +50,14 @@ spec =
     it "on POST /move returns error 400 given move is invalid" $ do
       let move = encode invalidPlay
       request methodPost "/move" [("content-type", "application/json")] move `shouldRespondWith` 400
+
+  describe "Djambi Players Handling" $ do
+    let emptyGameState = GameState { gameState = initialGame, players = [] } 
+
+    it "on POST /games returns new game id as JSON" $ do
+      post "/games" "{}" `shouldRespondWith` json emptyGameState
+
+    -- it "on POST /games/<game-id> registers user and assign next color" $ do
+    --   gameId <- post "/games" 
+
+    --   post ("/games/" <> gameId)  `shouldRespondWith` User { color = toJSON Vert } 
