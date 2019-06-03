@@ -32,7 +32,7 @@ instance ToJSON Piece
 instance FromJSON Piece
 
 data Party = Vert | Rouge | Bleu | Jaune
-  deriving (Eq, Enum, Ord, Show, Generic)
+  deriving (Eq, Enum, Bounded, Ord, Show, Generic)
 
 instance ToJSON Party
 instance FromJSON Party

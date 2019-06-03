@@ -8,6 +8,7 @@ import           Data.Text.Lazy.Encoding   (decodeUtf8)
 import           Djambi
 import           Djambi.GameState
 import           Djambi.Server
+import           Djambi.User
 import           Network.HTTP.Types.Method
 import           Test.Hspec
 import           Test.Hspec.Wai            hiding (pendingWith)
@@ -20,7 +21,10 @@ invalidPlay = Play Vert (C,1) (D, 3)
 
 -- Game state machine
 --  *  empty game -> join users{4} -> game full -> (possible moves -> move)* -> (end game | quit game)
--- 
+--  * Join users
+--     * [ ] assign colors to users 
+--     * [ ] reject new user if game is full
+
 spec :: Spec
 spec =  with djambiApp $ do
   let json :: (ToJSON a) => a -> ResponseMatcher
@@ -52,12 +56,21 @@ spec =  with djambiApp $ do
       request methodPost "/move" [("content-type", "application/json")] move `shouldRespondWith` 400
 
   describe "Djambi Players Handling" $ do
-    let emptyGameState = GameState { gameState = initialGame, players = [] } 
+    let emptyGameState = GameState { gameState = initialGame, players = 0 } 
 
     it "on POST /games returns new game id as JSON" $ do
       post "/games" "{}" `shouldRespondWith` json emptyGameState
 
-    -- it "on POST /games/<game-id> registers user and assign next color" $ do
-    --   gameId <- post "/games" 
+    it "on POST /game assigns users colors" $ do
+      _ <- post "/games" "{}"
+        
+      forM_ [ 0 .. 3 ] $ 
+        \ num -> post ("/game") "{}" `shouldRespondWith` json User { color = toEnum num } 
+      
+    it "on POST /game throws an error when game is full" $ do
+      _ <- post "/games" "{}"
+        
+      forM_ [ 0::Int .. 3 ] $ 
+        \ _ -> post ("/game") "{}"
 
-    --   post ("/games/" <> gameId)  `shouldRespondWith` User { color = toJSON Vert } 
+      post ("/game") "{}" `shouldRespondWith` 400
