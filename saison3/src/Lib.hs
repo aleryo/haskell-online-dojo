@@ -4,3 +4,6 @@ module Lib
 
 someFunc :: IO ()
 someFunc = putStrLn "someFunc"
+
+someFunc2 :: [Integer] -> Integer
+someFunc 
