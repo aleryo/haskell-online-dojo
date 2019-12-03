@@ -39,8 +39,6 @@ library:
 tests:
   saison3-test:
     main:                Spec.hs
-    other-modules:       TennisSpec
-                         AdventOfCode1Spec
     source-dirs:         test
     ghc-options:
     - -threaded
