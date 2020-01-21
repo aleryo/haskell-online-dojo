@@ -2,10 +2,22 @@ module AdventOfCodeIntcodeSpec where
 
 import Test.Hspec
 
-interpret :: [Int] -> [Int]
-interpret list@(1 : p1 : p2 : p3 : _) =  update list p3  (list!!p1 + list!!p2)       
-interpret list@(2 : p1 : p2 : p3 : _) =  update list p3  (list!!p1 * list!!p2)       
-interpret xs = xs
+newtype Cursor = Cursor Int
+
+interpret = fst . interpret' . fromList 
+
+interpret' :: ([Int], Cursor) -> ([Int],Cursor)
+interpret' (list, Cursor c )
+    | list!!c == 1  =  interpret' ((addition list c), Cursor (c+4))
+    | list!!c == 2  =  interpret' (multiplication list c, Cursor (c +4))
+    | list!!c == 99  =  (list, Cursor c)
+
+addition :: [Int] -> Int -> [Int]
+addition tab cursor = update tab (tab!!(cursor+3)) (tab!!(tab!!(cursor+1)) + tab!!(tab!!(cursor+2)))
+
+multiplication :: [Int] -> Int -> [Int]
+multiplication tab cursor = update tab (tab!!(cursor+3)) (tab!!(tab!!(cursor+1)) * tab!!(tab!!(cursor+2)))
+
 
 spec :: Spec
 spec = describe "Intcode Computer - Day 2" $ do
@@ -28,6 +40,7 @@ spec = describe "Intcode Computer - Day 2" $ do
         it "update 0 to 1 on a single element list" $ do
           update [0] 0 1 `shouldBe` [1]
 
+fromList l = (l, Cursor 0)
 
 update :: [Int] -> Int -> Int -> [Int]
 update list index value = take index list ++ [value] ++ drop (index + 1) list
