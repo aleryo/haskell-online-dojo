@@ -49,7 +49,6 @@ multiplication :: [Int] -> Int -> [Int]
 multiplication tab cursor = update tab (tab!!(cursor+3)) (tab!!(tab!!(cursor+1)) * tab!!(tab!!(cursor+2)))
 
 
-
 spec :: Spec
 spec = describe "Intcode Computer - Day 2" $ do
     -- 1,0,0,0,99 becomes 2,0,0,0,99 
