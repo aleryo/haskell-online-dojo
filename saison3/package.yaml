@@ -24,6 +24,7 @@ dependencies:
 - split
 - hspec
 - hspec-discover
+- array
 
 library:
   source-dirs: src
@@ -52,3 +53,4 @@ tests:
     - hspec
     - hspec-discover
     - split
+    - array
