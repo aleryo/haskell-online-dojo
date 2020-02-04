@@ -21,6 +21,10 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - base >= 4.7 && < 5
+- split
+- hspec
+- hspec-discover
+- array
 
 library:
   source-dirs: src
@@ -48,3 +52,5 @@ tests:
     - saison3
     - hspec
     - hspec-discover
+    - split
+    - array

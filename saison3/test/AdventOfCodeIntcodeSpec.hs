@@ -1,23 +1,79 @@
 module AdventOfCodeIntcodeSpec where
 
 import Test.Hspec
+import Data.List.Split
+import Data.Array
 
 newtype Cursor = Cursor Int
 
-interpret = fst . interpret' . fromList 
+newtype Interpreter = Interpreter ([Int], Cursor)
 
-interpret' :: ([Int], Cursor) -> ([Int],Cursor)
-interpret' (list, Cursor c )
-    | list!!c == 1  =  interpret' ((addition list c), Cursor (c+4))
-    | list!!c == 2  =  interpret' (multiplication list c, Cursor (c +4))
-    | list!!c == 99  =  (list, Cursor c)
+memory :: Interpreter -> [Int]
+memory (Interpreter (memory, _)) = memory
 
-addition :: [Int] -> Int -> [Int]
-addition tab cursor = update tab (tab!!(cursor+3)) (tab!!(tab!!(cursor+1)) + tab!!(tab!!(cursor+2)))
+cursor :: Interpreter -> Int
+cursor (Interpreter (_, Cursor c)) = c
 
-multiplication :: [Int] -> Int -> [Int]
-multiplication tab cursor = update tab (tab!!(cursor+3)) (tab!!(tab!!(cursor+1)) * tab!!(tab!!(cursor+2)))
+start :: [Int] -> Interpreter
+start startingMemory = Interpreter (startingMemory, Cursor 0)
 
+interpret :: [Int] -> [Int]
+interpret = memory . interpret' . start
+
+interpretReprogrammed :: [Int] -> Int -> Int -> [Int]
+interpretReprogrammed interpreter  a b  = memory  (interpret'  ((put (put (start interpreter) 1 a ) 2 b)))
+
+output :: [Int] -> Int -> Int -> Int
+output interpreter a b  = head  (interpretReprogrammed interpreter  a b)
+
+
+currentInstruction :: Interpreter -> Int
+currentInstruction interpreter = (memory interpreter)!!(cursor interpreter)
+
+interpret' :: Interpreter -> Interpreter
+interpret' interpreter@(Interpreter (list, Cursor c))
+    | currentInstruction interpreter == 1  =  interpret' $ additionCommand interpreter
+    | currentInstruction interpreter == 2  =  interpret' $ multiplicationCommand interpreter
+    | otherwise = interpreter
+
+(@@) :: Interpreter -> Int -> Int
+(Interpreter (list, Cursor c)) @@ idx = list !! (c + idx)
+
+(@!) :: Interpreter -> Int -> Int
+(Interpreter (list, _)) @! idx = list !! idx
+
+advance :: Interpreter -> Int -> Interpreter 
+advance (Interpreter (list, Cursor c)) n = Interpreter (list, Cursor (c + n))
+
+additionCommand :: Interpreter -> Interpreter
+additionCommand interpreter = 
+    advance (addition interpreter)
+            4
+
+addition :: Interpreter -> Interpreter
+addition interpreter = put interpreter (interpreter @@ 3) ((interpreter @! (interpreter @@ 1)) + 
+                   (interpreter @! (interpreter @@ 2)))
+
+multiplication :: Interpreter -> Interpreter
+multiplication interpreter = put interpreter (interpreter @@ 3) ((interpreter @! (interpreter @@ 1)) * 
+                   (interpreter @! (interpreter @@ 2)))
+
+multiplicationCommand :: Interpreter -> Interpreter
+multiplicationCommand interpreter = 
+    advance (multiplication interpreter) 
+            4
+
+update :: [Int] -> Int -> Int -> [Int] -- to delete
+update list index value = take index list ++ [value] ++ drop (index + 1) list
+
+put :: Interpreter -> Int -> Int -> Interpreter
+put (Interpreter(list, c)) index value = Interpreter(take index list ++ [value] ++ drop (index + 1) list, c)
+
+parse :: [Char] -> [Int]
+parse input = convert $ (splitOn "," input)
+
+convert :: [String] -> [Int]
+convert = map read
 
 spec :: Spec
 spec = describe "Intcode Computer - Day 2" $ do
@@ -29,18 +85,28 @@ spec = describe "Intcode Computer - Day 2" $ do
     
     it "interprets two additions" $ do
         interpret [1,0,0,0,1,0,0,0,99] `shouldBe` [4,0,0,0,1,0,0,0,99]
-
+    
     it "interprets 2 as multiplication" $ do
         interpret [2,3,0,3,99] `shouldBe` [2,3,0,6,99]
 
+    it "interprets 2 multiplications" $ do
+        interpret [2,3,0,3,2,3,0,3,99] `shouldBe` [2,3,0,12,2,3,0,3,99]
+
+    it "can parse a from a string" $ do 
+        parse "1,0,0,0,99" `shouldBe` [1,0,0,0,99]
+
+    it "can reprogram our program" $ do
+        let input =  parse "1,0,0,3,1,1,2,3,1,3,4,3,1,5,0,3,2,6,1,19,1,5,19,23,2,6,23,27,1,27,5,31,2,9,31,35,1,5,35,39,2,6,39,43,2,6,43,47,1,5,47,51,2,9,51,55,1,5,55,59,1,10,59,63,1,63,6,67,1,9,67,71,1,71,6,75,1,75,13,79,2,79,13,83,2,9,83,87,1,87,5,91,1,9,91,95,2,10,95,99,1,5,99,103,1,103,9,107,1,13,107,111,2,111,10,115,1,115,5,119,2,13,119,123,1,9,123,127,1,5,127,131,2,131,6,135,1,135,5,139,1,139,6,143,1,143,6,147,1,2,147,151,1,151,5,0,99,2,14,0,0"
+        interpretReprogrammed input 12 2 `shouldBe` [4484226,12,2,2,1,1,2,3,1,3,4,3,1,5,0,3,2,6,1,24,1,5,19,25,2,6,23,50,1,27,5,51,2,9,31,153,1,5,35,154,2,6,39,308,2,6,43,616,1,5,47,617,2,9,51,1851,1,5,55,1852,1,10,59,1856,1,63,6,1858,1,9,67,1861,1,71,6,1863,1,75,13,1868,2,79,13,9340,2,9,83,28020,1,87,5,28021,1,9,91,28024,2,10,95,112096,1,5,99,112097,1,103,9,112100,1,13,107,112105,2,111,10,448420,1,115,5,448421,2,13,119,2242105,1,9,123,2242108,1,5,127,2242109,2,131,6,4484218,1,135,5,4484219,1,139,6,4484221,1,143,6,4484223,1,2,147,4484225,1,151,5,0,99,2,14,0,0]
+
+    
+
     it "99 ends the program" $ do 
         interpret  [99] `shouldBe` [99]
+
 
     describe "update" $ do
         it "update 0 to 1 on a single element list" $ do
           update [0] 0 1 `shouldBe` [1]
 
-fromList l = (l, Cursor 0)
 
-update :: [Int] -> Int -> Int -> [Int]
-update list index value = take index list ++ [value] ++ drop (index + 1) list
