@@ -1,106 +1,8 @@
 module AdventOfCodeIntcodeSpec where
 
 import Test.Hspec
-import Data.List.Split
-import Data.Array
-import Data.Function ((&))
+import Intcode
 
-newtype Cursor = Cursor Int
-newtype Input = Input Int
-
-newtype Interpreter = Interpreter ([Int], Cursor, Input)
-
-newtype Setup = Setup (Int, Int)
-
-data Result = Success Int | Failure
-
-memory :: Interpreter -> [Int]
-memory (Interpreter (memory, _ , _)) = memory
-
-cursor :: Interpreter -> Int
-cursor (Interpreter (_, Cursor c,_)) = c
-
-start :: [Int] -> Interpreter
-start startingMemory = Interpreter (startingMemory, Cursor 0, Input 0)
-
-startWithInput :: [Int] -> Int -> Interpreter
-startWithInput startingMemory input = Interpreter (startingMemory, Cursor 0, Input input)
-
-interpret :: [Int] -> [Int]
-interpret = memory . interpret' . start
-
-output :: Interpreter -> Int
-output  = undefined
-
-intepretWithInput :: [Int] -> Int -> Interpreter
-intepretWithInput startingMemory input = interpret' $ startWithInput startingMemory input
-
-interpretReprogrammed :: [Int] -> Int -> Int -> [Int]
-interpretReprogrammed interpreter a b  = memory  $ interpret'  $ (put (put (start interpreter) 1 a ) 2 b)
-
-currentInstruction :: Interpreter -> Int
-currentInstruction interpreter = (memory interpreter)!!(cursor interpreter)
-
-interpret' :: Interpreter -> Interpreter
-interpret' interpreter@(Interpreter (list, Cursor c, _))
-    | currentInstruction interpreter == 1  =  interpret' $ additionCommand interpreter
-    | currentInstruction interpreter == 2  =  interpret' $ multiplicationCommand interpreter
-    | currentInstruction interpreter == 3  =  interpret' $ inputCommand interpreter
-    | otherwise = interpreter
-
-(@@) :: Interpreter -> Int -> Int
-(Interpreter (list, Cursor c,_)) @@ idx = list !! (c + idx)
-
-(@!) :: Interpreter -> Int -> Int
-(Interpreter (list, _ , _)) @! idx = list !! idx
-
-advance :: Interpreter -> Int -> Interpreter 
-advance (Interpreter (list, Cursor c,input)) n = Interpreter (list, Cursor (c + n),input)
-
-additionCommand :: Interpreter -> Interpreter
-additionCommand interpreter = 
-    advance (addition interpreter)
-            4
-
-inputCommand :: Interpreter -> Interpreter
-inputCommand interpreter = 
-    advance (inputFn interpreter)
-            2
-
-inputFn :: Interpreter -> Interpreter
-inputFn interpreter@(Interpreter (list, Cursor c,Input i)) = put interpreter (interpreter @@ 1) i
-
-addition :: Interpreter -> Interpreter
-addition interpreter = put interpreter (interpreter @@ 3) ((interpreter @! (interpreter @@ 1)) + 
-                   (interpreter @! (interpreter @@ 2)))
-
-multiplication :: Interpreter -> Interpreter
-multiplication interpreter = put interpreter (interpreter @@ 3) ((interpreter @! (interpreter @@ 1)) * 
-                   (interpreter @! (interpreter @@ 2)))
-
-multiplicationCommand :: Interpreter -> Interpreter
-multiplicationCommand interpreter = 
-    advance (multiplication interpreter) 
-            4
-
-update :: [Int] -> Int -> Int -> [Int] -- to delete
-update list index value = take index list ++ [value] ++ drop (index + 1) list
-
-put :: Interpreter -> Int -> Int -> Interpreter
-put (Interpreter(list, c, input)) index value = Interpreter(take index list ++ [value] ++ drop (index + 1) list, c, input)
-
-parse :: [Char] -> [Int]
-parse input = convert $ (splitOn "," input)
-
-convert :: [String] -> [Int]
-convert = map read
-
-findParameters :: [Int] -> Int -> ( Int, Int)
-findParameters input result =
-    [(head (interpretReprogrammed input a b), (a, b)) | a <- [0..99], b <- [0..99]]
-    & filter (\(actualResult, _) -> actualResult == result)
-    & head
-    & snd
 
 spec :: Spec
 spec = describe "Intcode Computer - Day 2" $ do
@@ -132,17 +34,26 @@ spec = describe "Intcode Computer - Day 2" $ do
     
     it "can use input data" $ do
         let input = parse "3,0,99"
-        memory  (intepretWithInput input 42 ) `shouldBe` [42,0,99] 
+        memory  (interpretWithInput input 42 ) `shouldBe` [42,0,99] 
 
     
-    xit "can output data" $ do
+    it "can output data" $ do
         let input = parse "3,0,4,0,99"
-        output (intepretWithInput input 42) `shouldBe` 42
+        output (interpretWithInput input 42) `shouldBe` 42
+        output (interpretWithInput input 41) `shouldBe` 41    
     
+    xit "can handle different parameter modes" $ do
+        let input = parse "01002,4,3,4,33"
+        memory  (interpretWithInput input 0) `shouldBe` [1002,4,3,4,99] 
 
     it "99 ends the program" $ do 
         interpret  [99] `shouldBe` [99]
 
+    describe "Memory Reader" $ do
+
+        xit "it decodes instruction format" $ do
+            decodeInstruction 1002 `shouldBe` [0,1,0,2]
+            decodeInstruction 102 `shouldBe` [0,0,1,2]
 
     describe "update" $ do
         it "update 0 to 1 on a single element list" $ do
