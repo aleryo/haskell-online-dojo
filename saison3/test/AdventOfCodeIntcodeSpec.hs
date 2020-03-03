@@ -42,7 +42,7 @@ spec = describe "Intcode Computer - Day 2" $ do
         output (interpretWithInput input 42) `shouldBe` 42
         output (interpretWithInput input 41) `shouldBe` 41    
     
-    xit "can handle different parameter modes" $ do
+    it "can handle different parameter modes" $ do
         let input = parse "01002,4,3,4,33"
         memory  (interpretWithInput input 0) `shouldBe` [1002,4,3,4,99] 
 

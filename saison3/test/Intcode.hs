@@ -37,15 +37,16 @@ interpretWithInput startingMemory input = interpret' $ startWithInput startingMe
 interpretReprogrammed :: [Int] -> Int -> Int -> [Int]
 interpretReprogrammed interpreter a b  = memory  $ interpret'  $ (put (put (start interpreter) 1 a ) 2 b)
 
-currentInstruction :: Interpreter -> Int
-currentInstruction interpreter = (memory interpreter)!!(uncursor $ cursor interpreter)
+currentInstruction :: Interpreter -> Instruction
+currentInstruction interpreter = decodeInstruction $ (memory interpreter)!!(uncursor $ cursor interpreter)
 
 interpret' :: Interpreter -> Interpreter
 interpret' interpreter@(Interpreter {cursor = Cursor c})
-    | currentInstruction interpreter == 1  =  interpret' $ additionCommand interpreter
-    | currentInstruction interpreter == 2  =  interpret' $ multiplicationCommand interpreter
-    | currentInstruction interpreter == 3  =  interpret' $ inputCommand interpreter
-    | currentInstruction interpreter == 4  =  interpret' $ outputCommand interpreter
+    | currentInstruction interpreter == Instruction [0,0,0,1]  =  interpret' $ additionCommand interpreter
+    | currentInstruction interpreter == Instruction [0,0,0,2]  =  interpret' $ multiplicationCommand interpreter
+    | currentInstruction interpreter == Instruction [0,1,0,2]  =  interpret' $ multiplicationDirectCommand interpreter
+    | currentInstruction interpreter == Instruction [0,0,0,3]  =  interpret' $ inputCommand interpreter
+    | currentInstruction interpreter == Instruction [0,0,0,4]  =  interpret' $ outputCommand interpreter
     | otherwise = interpreter
 
 (@@) :: Interpreter -> Int -> Int
@@ -81,7 +82,6 @@ inputFn interpreter@(Interpreter {memory = list, input = Input i}) = put interpr
 outputFn :: Interpreter -> Interpreter
 outputFn interp = interp {output = interp @!! 1}
 
-
 addition :: Interpreter -> Interpreter
 addition interpreter = put interpreter (interpreter @@ 3) 
                     ((interpreter @!! 1) + (interpreter @!! 2))
@@ -93,6 +93,11 @@ multiplication interpreter = put interpreter (interpreter @@ 3)
 multiplicationCommand :: Interpreter -> Interpreter
 multiplicationCommand interpreter = 
     advance (multiplication interpreter) 
+            4
+
+multiplicationDirectCommand :: Interpreter -> Interpreter
+multiplicationDirectCommand interpreter = 
+    advance (put interpreter (interpreter @@ 3) ((interpreter @!! 1) * (interpreter @! 2))) 
             4
 
 update :: [Int] -> Int -> Int -> [Int] -- to delete
