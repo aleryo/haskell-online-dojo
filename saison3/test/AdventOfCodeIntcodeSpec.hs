@@ -6,6 +6,7 @@ import Intcode
 
 spec :: Spec
 spec = describe "Intcode Computer - Day 2" $ do
+    
     -- 1,0,0,0,99 becomes 2,0,0,0,99 
     it "interprets 1 as addition" $ do
         interpret [1,0,0,0,99] `shouldBe` [2,0,0,0,99]
@@ -35,7 +36,6 @@ spec = describe "Intcode Computer - Day 2" $ do
     it "can use input data" $ do
         let input = parse "3,0,99"
         memory  (interpretWithInput input 42 ) `shouldBe` [42,0,99] 
-
     
     it "can output data" $ do
         let input = parse "3,0,4,0,99"
@@ -51,9 +51,14 @@ spec = describe "Intcode Computer - Day 2" $ do
 
     describe "Memory Reader" $ do
 
-        xit "it decodes instruction format" $ do
-            decodeInstruction 1002 `shouldBe` [0,1,0,2]
-            decodeInstruction 102 `shouldBe` [0,0,1,2]
+        it "it decodes instruction format" $ do
+            decodeInstruction 1002 `shouldBe` Instruction [0,1,0,2]
+            decodeInstruction 102 `shouldBe` Instruction [0,0,1,2]
+            decodeInstruction 10002 `shouldBe` Instruction [1,0,0,2]
+            decodeInstruction 10001 `shouldBe` Instruction [1,0,0,1]
+
+        it "should gives me hundreds" $ do 
+            hundreds 12345 `shouldBe` 3
 
     describe "update" $ do
         it "update 0 to 1 on a single element list" $ do

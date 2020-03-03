@@ -114,5 +114,15 @@ findParameters input result =
     & head
     & snd    
 
-decodeInstruction :: Int -> [Int]
-decodeInstruction _ = [0,1,0,2]
+newtype Instruction = Instruction [Int]
+    deriving (Eq, Show)
+
+decodeInstruction :: Int -> Instruction
+decodeInstruction input = Instruction
+    [ input `div` 10000 `mod` 10
+    , input `div` 1000 `mod` 10
+    , input `div` 100 `mod` 10
+    , input `mod` 100]
+
+hundreds :: Int -> Int
+hundreds input = input `div` 100 `mod` 10
