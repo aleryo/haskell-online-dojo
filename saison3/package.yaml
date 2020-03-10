@@ -3,7 +3,7 @@ version:             0.1.0.0
 github:              "githubuser/saison3"
 license:             BSD3
 author:              "Author name here"
-maintainer:          "example@example.com"
+maintainer:       T JO  "example@example.com"
 copyright:           "2019 Author name here"
 
 extra-source-files:
@@ -20,25 +20,30 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/githubuser/saison3#readme>
 
 dependencies:
+- aeson
 - base >= 4.7 && < 5
 - split
 - hspec
 - hspec-discover
 - array
+- servant
+- servant-server
+- wai
+- warp
 
 library:
   source-dirs: src
 
-# executables:
-#   saison3-exe:
-#     main:                Main.hs
-#     source-dirs:         app
-#     ghc-options:
-#     - -threaded
-#     - -rtsopts
-#     - -with-rtsopts=-N
-#     dependencies:
-#     - saison3
+executables:
+  saison3-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - saison3
 
 tests:
   saison3-test:
@@ -49,8 +54,13 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - bytestring
     - saison3
     - hspec
     - hspec-discover
+    - hspec-wai
+    - hspec-wai-json
     - split
     - array
+    - wai
+    - wai-extra

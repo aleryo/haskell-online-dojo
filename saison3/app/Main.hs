@@ -1,6 +1,8 @@
 module Main where
 
-import Lib
+import Api
+import Network.Wai.Handler.Warp
 
 main :: IO ()
-main = someFunc
+main = run 5678 intcodeServer
+-

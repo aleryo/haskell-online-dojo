@@ -63,5 +63,3 @@ spec = describe "Intcode Computer - Day 2" $ do
     describe "update" $ do
         it "update 0 to 1 on a single element list" $ do
           update [0] 0 1 `shouldBe` [1]
-
-
