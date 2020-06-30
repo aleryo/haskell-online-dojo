@@ -48,9 +48,12 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -Wall
+    - -Werror
     dependencies:
     - saison3
     - hspec
     - hspec-discover
+    - QuickCheck
     - split
     - array
